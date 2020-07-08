@@ -157,7 +157,7 @@ void camera_update()
 
 static void camera_update_velocity()
 {
-    float max_vel = 5.0f * TARGET_SPF;
+    float max_vel = 0.1f;
 
     if(player.key_shift)
     {
@@ -177,7 +177,7 @@ static void camera_update_velocity()
     if(player.key_space && !player.is_in_air)
     {
         player.is_in_air = true;
-        camera.velocity.y = 1.0f;
+        camera.velocity.y = 0.5f;
     }
 
     if(player.key_w_down)
@@ -254,7 +254,7 @@ static void camera_update_position()
     // @TODO: Move this code into "player" file
     if(camera.position.y > player.height)
     {
-        camera.velocity.y -= 0.05f;
+        camera.velocity.y -= 0.02f;
     }
     else
     {
