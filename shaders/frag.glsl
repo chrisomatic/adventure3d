@@ -1,5 +1,6 @@
 #version 330 core
 
+in vec4 color;
 in vec2 tex_coord0;
 in vec3 normal0;
 
@@ -18,7 +19,7 @@ uniform sampler2D sampler;
 
 void main()
 {
-    vec4 ambient_color   = vec4(dl.color * dl.ambient_intensity, 1.0f);
+    vec4  ambient_color  = vec4(dl.color * dl.ambient_intensity, 1.0f);
     float diffuse_factor = dot(normalize(normal0), -dl.direction);
 
     vec4 diffuse_color;
@@ -32,6 +33,7 @@ void main()
         diffuse_color = vec4(0, 0, 0, 0);
     }
 
-    frag_color = texture2D(sampler, tex_coord0.xy) *
-                 (ambient_color + diffuse_color);
+    frag_color = texture2D(sampler, tex_coord0.xy) * (ambient_color + diffuse_color);
+    //frag_color = color;
+    //frag_color = vec4(0.5,0.5,0.5,1.0) * (ambient_color + diffuse_color);
 };

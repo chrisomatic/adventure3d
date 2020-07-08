@@ -18,7 +18,7 @@
 #include "transform.h"
 #include "player.h"
 #include "lighting.h"
-#include "import.h"
+#include "mesh.h"
 
 // =========================
 // Global Vars
@@ -26,34 +26,9 @@
 
 GLuint vbo,ibo;
 
-Vertex vertices[] =
-{
-    {{-1.0f,-1.0f, 0.5773f}  ,{0.0f,0.0f}, {0.0f,0.0f,0.0f}},
-    {{ 0.0f,-1.0f, -1.15475f},{0.5f,0.0f}, {0.0f,0.0f,0.0f}},
-    {{ 1.0f,-1.0f, 0.5773f}  ,{1.0f,0.0f}, {0.0f,0.0f,0.0f}},
-    {{ 0.0f, 1.0f, 0.0f}     ,{0.5f,1.0f}, {0.0f,0.0f,0.0f}},
-};
-
-unsigned int indices[] = 
-{
-    0,3,1,
-    1,3,2,
-    2,3,0,
-    0,1,2
-};
-
 Texture texture = {0};
-
-typedef struct
-{
-    GLuint vbo;
-    GLuint ibo;
-    Vector3f pos;
-} Object;
-
-#define MAX_OBJECTS 100
-Object objects[MAX_OBJECTS] = {0};
-int num_objects = 0;
+Mesh obj = {0};
+Mesh ground = {0};
 
 // =========================
 // Function Prototypes
@@ -66,7 +41,7 @@ void render();
 
 void create_vbo();
 void load_textures();
-void init_objects();
+void init_meshes();
 
 // =========================
 // Main Loop
@@ -74,9 +49,6 @@ void init_objects();
 
 int main()
 {
-
-    import_stlb("models/test.stl");
-
     init();
 
     double lasttime = glfwGetTime();
@@ -114,19 +86,6 @@ void simulate()
 
     camera_update();
 
-    world_set_scale(1.0f,1.0f,1.0f);
-    world_set_rotation(10*world.time,10*world.time,0.0f);
-    world_set_position(0.0f,10.0f*sinf(world.time),40.0f); //ABS(50.0f*sinf(world.time)));
-
-    Matrix4f* _world = get_world_transform();
-    Matrix4f* _wvp   = get_wvp_transform();
-
-    glUniformMatrix4fv(world_location,1,GL_TRUE,(const GLfloat*)_world);
-    glUniformMatrix4fv(wvp_location,1,GL_TRUE,(const GLfloat*)_wvp);
-
-    glUniform3f(dir_light_location.color, light.color.x, light.color.y, light.color.z);
-    glUniform1f(dir_light_location.ambient_intensity, light.ambient_intensity);
-
     Vector3f dir;
     copy_v3f(&dir, &light.direction);
     normalize_v3f(&dir);
@@ -139,24 +98,38 @@ void render()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glEnableVertexAttribArray(2);
+    Matrix4f* _world;
+    Matrix4f* _wvp;
 
-    for(int i = 0; i < num_objects; ++i)
-    {
-        glBindBuffer(GL_ARRAY_BUFFER, objects[i].vbo);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)12);
-        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)20);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,objects[i].ibo);
-        texture_bind(&texture,GL_TEXTURE0);
-        glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
-    }
+    world_set_scale(100.0f,1.0f,100.0f);
+    world_set_rotation(0.0f,0.0f,0.0f);
+    world_set_position(0.0f,0.0f,0.0f);
 
-    glDisableVertexAttribArray(0);
-    glDisableVertexAttribArray(1);
-    glDisableVertexAttribArray(2);
+    _world = get_world_transform();
+    _wvp   = get_wvp_transform();
+
+    glUniformMatrix4fv(world_location,1,GL_TRUE,(const GLfloat*)_world);
+    glUniformMatrix4fv(wvp_location,1,GL_TRUE,(const GLfloat*)_wvp);
+
+    glUniform3f(dir_light_location.color, light.color.x, light.color.y, light.color.z);
+    glUniform1f(dir_light_location.ambient_intensity, light.ambient_intensity);
+
+    mesh_render(&ground);
+
+    world_set_scale(1.0f,1.0f,1.0f);
+    world_set_rotation(10*world.time,10*world.time,0.0f);
+    world_set_position(0.0f,10.0f*sinf(world.time),40.0f); //ABS(50.0f*sinf(world.time)));
+
+    _world = get_world_transform();
+    _wvp   = get_wvp_transform();
+
+    glUniformMatrix4fv(world_location,1,GL_TRUE,(const GLfloat*)_world);
+    glUniformMatrix4fv(wvp_location,1,GL_TRUE,(const GLfloat*)_wvp);
+
+    glUniform3f(dir_light_location.color, light.color.x, light.color.y, light.color.z);
+    glUniform1f(dir_light_location.ambient_intensity, light.ambient_intensity);
+
+    mesh_render(&obj);
 
     // Swap buffers
     glfwSwapBuffers(window);
@@ -200,14 +173,14 @@ void init()
 
     glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
-    printf("Creating vertex objects.\n");
-    init_objects();
+    printf("Loading textures.\n");
+    load_textures();
 
     printf("Loading shaders.\n");
     shader_load_all();
 
-    printf("Loading textures.\n");
-    load_textures();
+    printf("Creating meshes.\n");
+    init_meshes();
 
     camera_init();
     init_world();
@@ -227,19 +200,53 @@ void deinit()
     window_deinit();
 }
 
-void init_objects()
+void init_meshes()
 {
-    num_objects = 1;
+    mesh_load_model(MODEL_FORMAT_STL,"models/donut.stl",&obj);
+    calc_vertex_normals(obj.indices, obj.num_indices, obj.vertices, obj.num_vertices);
 
-    calc_vertex_normals(indices, COUNT_OF(indices), vertices, COUNT_OF(vertices));
+ 	glGenBuffers(1, &obj.vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, obj.vbo);
+	glBufferData(GL_ARRAY_BUFFER, obj.num_vertices*sizeof(Vertex), obj.vertices, GL_STATIC_DRAW);
 
- 	glGenBuffers(1, &objects[0].vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, objects[0].vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glGenBuffers(1,&obj.ibo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, obj.ibo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, obj.num_indices*sizeof(u32), obj.indices, GL_STATIC_DRAW);
 
-    glGenBuffers(1,&objects[0].ibo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, objects[0].ibo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    // ground
+    Vertex floor_vertices[] = {
+        {{0.0f,0.0f,0.0f},{0.0f,0.0f},{0.0f,0.0f,0.0f}},
+        {{0.0f,0.0f,1.0f},{0.0f,1.0f},{0.0f,0.0f,0.0f}},
+        {{1.0f,0.0f,0.0f},{1.0f,0.0f},{0.0f,0.0f,0.0f}},
+        {{1.0f,0.0f,1.0f},{1.0f,1.0f},{0.0f,0.0f,0.0f}}
+    };
+
+    u32 floor_indices[] = {
+        0,2,1,
+        2,3,1
+    };
+
+    ground.num_vertices = 4;
+    ground.vertices = malloc(ground.num_vertices*sizeof(Vertex));
+    memcpy(ground.vertices,floor_vertices,ground.num_vertices*sizeof(Vertex));
+
+    ground.num_indices = 6;
+    ground.indices = malloc(ground.num_indices*sizeof(u32));
+    memcpy(ground.indices,floor_indices,ground.num_indices*sizeof(u32));
+
+    calc_vertex_normals(ground.indices, ground.num_indices, ground.vertices, ground.num_vertices);
+
+ 	glGenBuffers(1, &ground.vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, ground.vbo);
+	glBufferData(GL_ARRAY_BUFFER, ground.num_vertices*sizeof(Vertex), ground.vertices, GL_STATIC_DRAW);
+
+    glGenBuffers(1,&ground.ibo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ground.ibo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, ground.num_indices*sizeof(u32), ground.indices, GL_STATIC_DRAW);
+
+    memcpy(&obj.mat.texture,&texture,sizeof(Texture));
+    memcpy(&ground.mat.texture,&texture,sizeof(Texture));
+
 }
 
 void load_textures()

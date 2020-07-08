@@ -2,7 +2,7 @@
 
 typedef struct
 {
-    GLuint texture_obj;
+    GLuint id;
     unsigned char *data;
 } Texture;
 

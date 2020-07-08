@@ -10,7 +10,7 @@
 #define TARGET_FPS     60
 #define TARGET_SPF     (1.0/TARGET_FPS) // seconds per frame
 
-#define FOV     30.0f 
+#define FOV     90.0f 
 #define Z_NEAR   1.0f
 #define Z_FAR  100.0f
 

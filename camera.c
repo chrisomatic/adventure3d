@@ -5,6 +5,7 @@
 
 #include "math3d.h"
 #include "settings.h"
+#include "player.h"
 
 #include "camera.h"
 
@@ -50,6 +51,7 @@ void camera_init()
 {
     memset(&camera,0,sizeof(Camera));
 
+    camera.position.y = 10.0f;
     camera.target.z = 1.0f;
     camera.up.y = 1.0f;
 
@@ -93,22 +95,20 @@ void camera_update_angle(float cursor_x, float cursor_y)
     camera.cursor.x = cursor_x;
     camera.cursor.y = cursor_y;
 
-    camera.angle_h += (float)delta_x / 20.0f;
-    camera.angle_v += (float)delta_y / 20.0f;
+    camera.angle_h += (float)delta_x / 16.0f;
+    camera.angle_v += (float)delta_y / 16.0f;
 
-    /*
     if(camera.angle_h > 360)
         camera.angle_h -= 360.0f;
     else if(camera.angle_h < 0)
         camera.angle_h += 360.f;
-    */
 
     if(camera.angle_v > 90)
         camera.angle_v = 90.0f;
     else if(camera.angle_v < -90)
         camera.angle_v = -90.0f;
 
-    printf("Angle: H %f, V %f\n",camera.angle_h,camera.angle_v);
+   //printf("Angle: H %f, V %f\n",camera.angle_h,camera.angle_v);
 
 }
 
@@ -161,6 +161,19 @@ static void camera_update_position()
     camera.position.x += camera.velocity.x;
     camera.position.y += camera.velocity.y;
     camera.position.z += camera.velocity.z;
+
+    // @TODO: Move this code into "player" file
+    if(camera.position.y > 10.0f)
+    {
+        camera.velocity.y -= 0.05f;
+    }
+    else
+    {
+        camera.position.y = 10.0f;
+        camera.velocity.y = 0.0f;
+        player.is_in_air = false;
+    }
+
 }
 
 static void camera_update_rotations()

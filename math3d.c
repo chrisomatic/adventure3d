@@ -2,6 +2,7 @@
 #include <string.h>
 #include <math.h>
 
+#include "util.h"
 #include "math3d.h"
 
 const Matrix4f identity_m4f = {
@@ -126,13 +127,13 @@ void add_v3f(Vector3f a, Vector3f b, Vector3f* ret)
     ret->z = a.z + b.z;
 }
 
-void calc_vertex_normals(const unsigned int* indices, unsigned int index_count, Vertex* vertices, unsigned int vertex_count)
+void calc_vertex_normals(const u32* indices, u32 index_count, Vertex* vertices, u32 vertex_count)
 {
     for (int i = 0; i < index_count; i += 3)
     {
-        int i0 = indices[i];
-        int i1 = indices[i + 1];
-        int i2 = indices[i + 2];
+        u32 i0 = indices[i];
+        u32 i1 = indices[i + 1];
+        u32 i2 = indices[i + 2];
 
         Vector3f v1,v2;
 
@@ -153,6 +154,7 @@ void calc_vertex_normals(const unsigned int* indices, unsigned int index_count, 
         normalize_v3f(&vertices[i].normal);
     }
 }
+
 void print_m4f(const char* title, Matrix4f w)
 {
     if(title != NULL)

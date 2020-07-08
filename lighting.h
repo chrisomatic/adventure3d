@@ -1,3 +1,5 @@
+#pragma once
+
 typedef struct
 {
     Vector3f color;

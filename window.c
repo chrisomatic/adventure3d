@@ -10,6 +10,7 @@
 #include "camera.h"
 #include "player.h"
 #include "lighting.h"
+#include "mesh.h"
 
 GLFWwindow* window;
 
@@ -92,9 +93,9 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
 
 static void key_callback(GLFWwindow* window, int key, int scan_code, int action, int mods)
 {
-    float max_vel = 1.0f;
+    float max_vel = 0.5f;
 
-    if(action == GLFW_PRESS)
+    if(action == GLFW_PRESS || action == GLFW_REPEAT)
     {
         switch(key)
         {
@@ -109,6 +110,13 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
                 break;
             case GLFW_KEY_D:
                 player.key_d_down = true;
+                break;
+            case GLFW_KEY_SPACE:
+                player.key_space = true;
+                break;
+            case GLFW_KEY_TAB:
+                show_wireframe = !show_wireframe;
+                printf("Wireframe: %d\n",show_wireframe);
                 break;
             case GLFW_KEY_M:
                 // toggle camera mode
@@ -142,32 +150,60 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
             case GLFW_KEY_D:
                 player.key_d_down = false;
                 break;
+            case GLFW_KEY_SPACE:
+                player.key_space = false;
+                break;
         }
     }
 
+    Vector3f target_velocity = {0};
+
     camera.velocity.x = 0.0f;
-    camera.velocity.y = 0.0f;
     camera.velocity.z = 0.0f;
+    if(!player.is_in_air)
+    {
+        camera.velocity.y = 0.0f;
+    }
+
+    if(player.key_space && !player.is_in_air)
+    {
+        player.is_in_air = true;
+        camera.velocity.y = 1.0f;
+    }
 
     if(player.key_w_down)
     {
         printf("Moving forward!\n");
-        if(camera.mode == CAMERA_MODE_FREEFORM)
+
+        if(camera.mode == CAMERA_MODE_LOCKED_TO_PLAYER)
         {
-            camera.velocity.y += -max_vel * camera.target.y;
+            copy_v3f(&target_velocity,&camera.target);
+            target_velocity.y = 0.0f;
+            normalize_v3f(&target_velocity);
         }
-        camera.velocity.x += -max_vel * camera.target.x;
-        camera.velocity.z += -max_vel * camera.target.z;
+        else
+            copy_v3f(&target_velocity,&camera.target);
+
+        camera.velocity.x += -max_vel * target_velocity.x;
+        camera.velocity.y += -max_vel * target_velocity.y;
+        camera.velocity.z += -max_vel * target_velocity.z;
     }
     if(player.key_s_down)
     {
         printf("Moving backwards!\n");
-        if(camera.mode == CAMERA_MODE_FREEFORM)
+
+        if(camera.mode == CAMERA_MODE_LOCKED_TO_PLAYER)
         {
-            camera.velocity.y += +max_vel * camera.target.y;
+            copy_v3f(&target_velocity,&camera.target);
+            target_velocity.y = 0.0f;
+            normalize_v3f(&target_velocity);
         }
-        camera.velocity.x += +max_vel * camera.target.x;
-        camera.velocity.z += +max_vel * camera.target.z;
+        else
+            copy_v3f(&target_velocity,&camera.target);
+
+        camera.velocity.x += +max_vel * target_velocity.x;
+        camera.velocity.y += +max_vel * target_velocity.y;
+        camera.velocity.z += +max_vel * target_velocity.z;
     }
 
     if(player.key_a_down)
@@ -178,9 +214,9 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
         cross_v3f(camera.up, camera.target, &left);
         normalize_v3f(&left);
 
-        camera.velocity.x += -0.25f * left.x;
-        camera.velocity.y += -0.25f * left.y;
-        camera.velocity.z += -0.25f * left.z;
+        camera.velocity.x += -max_vel * left.x;
+        camera.velocity.y += -max_vel * left.y;
+        camera.velocity.z += -max_vel * left.z;
     }
     if(player.key_d_down)
     {
@@ -190,8 +226,8 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
         cross_v3f(camera.up, camera.target, &right);
         normalize_v3f(&right);
 
-        camera.velocity.x += +0.25f * right.x;
-        camera.velocity.y += +0.25f * right.y;
-        camera.velocity.z += +0.25f * right.z;
+        camera.velocity.x += +max_vel * right.x;
+        camera.velocity.y += +max_vel * right.y;
+        camera.velocity.z += +max_vel * right.z;
     }
 }

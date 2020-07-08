@@ -16,8 +16,8 @@ bool texture_load(Texture* t, const char* filepath)
         return false;
     }
 
-    glGenTextures(1, &t->texture_obj);
-    glBindTexture(GL_TEXTURE_2D, t->texture_obj);
+    glGenTextures(1, &t->id);
+    glBindTexture(GL_TEXTURE_2D, t->id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, t->data);
 
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -32,5 +32,5 @@ bool texture_load(Texture* t, const char* filepath)
 void texture_bind(Texture* t, GLenum texture_unit)
 {
     glActiveTexture(texture_unit);
-    glBindTexture(GL_TEXTURE_2D, t->texture_obj);
+    glBindTexture(GL_TEXTURE_2D, t->id);
 }
