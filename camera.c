@@ -15,6 +15,7 @@ Camera camera;
 // Prototypes
 //
 
+static void camera_update_velocity();
 static void camera_update_position();
 static void camera_update_rotations();
 
@@ -149,8 +150,96 @@ void camera_set_up(float x, float y, float z)
 
 void camera_update()
 {
+    camera_update_velocity();
     camera_update_position();
     camera_update_rotations();
+}
+
+static void camera_update_velocity()
+{
+    float max_vel = 0.5f;
+
+    if(player.key_shift)
+    {
+        max_vel *= 2.0f;
+    }
+
+    Vector3f target_velocity = {0};
+
+    camera.velocity.x = 0.0f;
+    camera.velocity.z = 0.0f;
+
+    if(!player.is_in_air)
+    {
+        camera.velocity.y = 0.0f;
+    }
+
+    if(player.key_space && !player.is_in_air)
+    {
+        player.is_in_air = true;
+        camera.velocity.y = 1.0f;
+    }
+
+    if(player.key_w_down)
+    {
+        printf("Moving forward!\n");
+
+        if(camera.mode == CAMERA_MODE_LOCKED_TO_PLAYER)
+        {
+            copy_v3f(&target_velocity,&camera.target);
+            target_velocity.y = 0.0f;
+            normalize_v3f(&target_velocity);
+        }
+        else
+            copy_v3f(&target_velocity,&camera.target);
+
+        camera.velocity.x += -max_vel * target_velocity.x;
+        camera.velocity.y += -max_vel * target_velocity.y;
+        camera.velocity.z += -max_vel * target_velocity.z;
+    }
+    if(player.key_s_down)
+    {
+        printf("Moving backwards!\n");
+
+        if(camera.mode == CAMERA_MODE_LOCKED_TO_PLAYER)
+        {
+            copy_v3f(&target_velocity,&camera.target);
+            target_velocity.y = 0.0f;
+            normalize_v3f(&target_velocity);
+        }
+        else
+            copy_v3f(&target_velocity,&camera.target);
+
+        camera.velocity.x += +max_vel * target_velocity.x;
+        camera.velocity.y += +max_vel * target_velocity.y;
+        camera.velocity.z += +max_vel * target_velocity.z;
+    }
+
+    if(player.key_a_down)
+    {
+        printf("Moving left!\n");
+
+        Vector3f left;
+        cross_v3f(camera.up, camera.target, &left);
+        normalize_v3f(&left);
+
+        camera.velocity.x += -max_vel * left.x;
+        camera.velocity.y += -max_vel * left.y;
+        camera.velocity.z += -max_vel * left.z;
+    }
+    if(player.key_d_down)
+    {
+        printf("Moving right!\n");
+
+        Vector3f right;
+        cross_v3f(camera.up, camera.target, &right);
+        normalize_v3f(&right);
+
+        camera.velocity.x += +max_vel * right.x;
+        camera.velocity.y += +max_vel * right.y;
+        camera.velocity.z += +max_vel * right.z;
+    }
+
 }
 
 static void camera_update_position()

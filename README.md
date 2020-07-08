@@ -25,6 +25,9 @@ This is a work-in-progress 3d game.
     s = Move Backwards
     d = Strafe Right
 
+    arrow keys = look around
+
+    shift = run
     space = Jump
 
     tab = toggle wireframe
