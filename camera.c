@@ -52,9 +52,9 @@ void camera_init()
 {
     memset(&camera,0,sizeof(Camera));
 
-    camera.position.y = 10.0f;
-    camera.target.z = 1.0f;
-    camera.up.y = 1.0f;
+    camera.position.y = player.height;
+    camera.target.z   = 1.0f;
+    camera.up.y       = 1.0f;
 
     Vector3f h_target = {
         camera.target.x,
@@ -157,7 +157,7 @@ void camera_update()
 
 static void camera_update_velocity()
 {
-    float max_vel = 0.5f;
+    float max_vel = 5.0f * TARGET_SPF;
 
     if(player.key_shift)
     {
@@ -252,13 +252,13 @@ static void camera_update_position()
     camera.position.z += camera.velocity.z;
 
     // @TODO: Move this code into "player" file
-    if(camera.position.y > 10.0f)
+    if(camera.position.y > player.height)
     {
         camera.velocity.y -= 0.05f;
     }
     else
     {
-        camera.position.y = 10.0f;
+        camera.position.y = player.height;
         camera.velocity.y = 0.0f;
         player.is_in_air = false;
     }

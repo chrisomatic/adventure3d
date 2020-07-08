@@ -15,10 +15,12 @@ bool texture_load(Texture* t, const char* filepath)
         printf("Failed to load file (%s)",filepath);
         return false;
     }
-
+    
+    printf("Loaded file %s. w: %d h: %d\n",filepath,x,y);
+    
     glGenTextures(1, &t->id);
     glBindTexture(GL_TEXTURE_2D, t->id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, t->data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, x, y, 0, GL_RGB, GL_UNSIGNED_BYTE, t->data);
 
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);    
@@ -33,4 +35,9 @@ void texture_bind(Texture* t, GLenum texture_unit)
 {
     glActiveTexture(texture_unit);
     glBindTexture(GL_TEXTURE_2D, t->id);
+}
+
+void texture_unbind()
+{
+    glBindTexture(GL_TEXTURE_2D, 0);
 }

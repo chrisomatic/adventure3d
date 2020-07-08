@@ -26,7 +26,9 @@
 
 GLuint vbo,ibo;
 
-Texture texture = {0};
+Texture texture1 = {0};
+Texture texture2 = {0};
+
 Mesh obj = {0};
 Mesh ground = {0};
 
@@ -188,6 +190,7 @@ void init()
     printf("Creating meshes.\n");
     init_meshes();
 
+    player_init();
     camera_init();
     init_world();
     init_lighting();
@@ -222,9 +225,9 @@ void init_meshes()
     // ground
     Vertex floor_vertices[] = {
         {{0.0f,0.0f,0.0f},{0.0f,0.0f},{0.0f,0.0f,0.0f}},
-        {{0.0f,0.0f,1.0f},{0.0f,1.0f},{0.0f,0.0f,0.0f}},
-        {{1.0f,0.0f,0.0f},{1.0f,0.0f},{0.0f,0.0f,0.0f}},
-        {{1.0f,0.0f,1.0f},{1.0f,1.0f},{0.0f,0.0f,0.0f}}
+        {{0.0f,0.0f,1.0f},{0.0f,10.0f},{0.0f,0.0f,0.0f}},
+        {{1.0f,0.0f,0.0f},{10.0f,0.0f},{0.0f,0.0f,0.0f}},
+        {{1.0f,0.0f,1.0f},{10.0f,10.0f},{0.0f,0.0f,0.0f}}
     };
 
     u32 floor_indices[] = {
@@ -250,8 +253,8 @@ void init_meshes()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ground.ibo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, ground.num_indices*sizeof(u32), ground.indices, GL_STATIC_DRAW);
 
-    memcpy(&obj.mat.texture,&texture,sizeof(Texture));
-    memcpy(&ground.mat.texture,&texture,sizeof(Texture));
+    memcpy(&obj.mat.texture,&texture2,sizeof(Texture));
+    memcpy(&ground.mat.texture,&texture1,sizeof(Texture));
 
 }
 
@@ -259,11 +262,20 @@ void load_textures()
 {
     bool success;
 
-    success = texture_load(&texture,"textures/test.png");
+    success = texture_load(&texture1,"textures/grass.png");
+
     if(!success)
     {
         printf("Failed to load texture!\n");
         return;
     }
-}
 
+    success = texture_load(&texture2,"textures/donut.png");
+
+    if(!success)
+    {
+        printf("Failed to load texture!\n");
+        return;
+    }
+
+}

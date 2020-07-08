@@ -8,3 +8,4 @@ typedef struct
 
 bool texture_load(Texture* t, const char* filepath);
 void texture_bind(Texture* t, GLenum texture_unit);
+void texture_unbind();

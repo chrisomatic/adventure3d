@@ -231,7 +231,9 @@ void mesh_render(Mesh* mesh)
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)12);
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)20);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,mesh->ibo);
-    texture_bind(&mesh->mat.texture,GL_TEXTURE0);
+
+    if(mesh->mat.texture.data)
+        texture_bind(&mesh->mat.texture,GL_TEXTURE0);
 
     if(show_wireframe)
         glDrawElements(GL_LINES, mesh->num_indices, GL_UNSIGNED_INT, 0);
@@ -241,5 +243,7 @@ void mesh_render(Mesh* mesh)
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(2);
+
+    texture_unbind();
 
 }
