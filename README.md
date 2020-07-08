@@ -1,5 +1,9 @@
 # Adventure3d
 
+This is a work-in-progress 3d game.
+
+![Preview](/screenshots/preview.png)
+
 ## Build and Run
 
 ```bash
