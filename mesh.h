@@ -34,5 +34,9 @@ typedef enum
 
 extern bool show_wireframe;
 
+extern Mesh obj;
+extern Mesh terrain;
+
+void mesh_init_all();
 void mesh_load_model(ModelFormat format, const char* file_path, Mesh* mesh);
 void mesh_render(Mesh* mesh);

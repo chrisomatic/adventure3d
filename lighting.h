@@ -9,3 +9,5 @@ typedef struct
 } Light;
 
 extern Light light;
+
+void lighting_init();

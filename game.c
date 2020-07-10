@@ -26,12 +26,6 @@
 
 GLuint vbo,ibo;
 
-Texture texture1 = {0};
-Texture texture2 = {0};
-
-Mesh obj = {0};
-Mesh ground = {0};
-
 // =========================
 // Function Prototypes
 // =========================
@@ -40,10 +34,6 @@ void init();
 void deinit();
 void simulate();
 void render();
-
-void create_vbo();
-void load_textures();
-void init_meshes();
 
 // =========================
 // Main Loop
@@ -79,6 +69,64 @@ int main()
 // =========================
 // Functions
 // =========================
+
+void init()
+{
+    bool success;
+
+    success = window_init();
+    if(!success)
+    {
+        fprintf(stderr,"Failed to initialize window!\n");
+        exit(1);
+    }
+
+    printf("GL version: %s\n",glGetString(GL_VERSION));
+    
+    glClearColor(0.15f, 0.15f, 0.15f, 0.0f);
+    glFrontFace(GL_CW);
+    glCullFace(GL_BACK);
+    glEnable(GL_CULL_FACE);
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LEQUAL);
+    glDepthRange(0.0f, 1.0f);
+
+    // VAO
+    GLuint VertexArrayID;
+    glGenVertexArrays(1, &VertexArrayID);
+    glBindVertexArray(VertexArrayID);
+
+    glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
+
+    printf("Loading textures.\n");
+    texture_load_all();
+
+    printf("Loading shaders.\n");
+    shader_load_all();
+
+    printf("Creating meshes.\n");
+    mesh_init_all();
+
+    player_init();
+    camera_init();
+    transform_world_init();
+    lighting_init();
+
+    glUniform1i(sampler, 0);
+
+    // put pointer in center of window
+    glfwSetCursorPos(window, camera.cursor.x, camera.cursor.y);
+}
+
+void deinit()
+{
+    glDeleteBuffers(1, &vbo);
+
+    shader_deinit();
+    window_deinit();
+}
 
 void simulate()
 {
@@ -117,7 +165,7 @@ void render()
     glUniform3f(dir_light_location.color, light.color.x, light.color.y, light.color.z);
     glUniform1f(dir_light_location.ambient_intensity, light.ambient_intensity);
 
-    mesh_render(&ground);
+    mesh_render(&terrain);
 
     world_set_scale(1.0f,1.0f,1.0f);
     world_set_rotation(10*world.time,10*world.time,0.0f);
@@ -138,144 +186,3 @@ void render()
     glfwSwapBuffers(window);
 }
 
-void init_lighting()
-{
-    light.color.x = 1.0f;
-    light.color.y = 1.0f;
-    light.color.z = 1.0f;
-
-    light.ambient_intensity = 0.50f;
-    light.diffuse_intensity = 0.75f;
-
-    light.direction.x = 1.00f;
-    light.direction.y = 0.00f;
-    light.direction.z = 0.00f;
-}
-
-void init()
-{
-    bool success;
-
-    success = window_init();
-    if(!success)
-    {
-        fprintf(stderr,"Failed to initialize window!\n");
-        exit(1);
-    }
-
-    printf("GL version: %s\n",glGetString(GL_VERSION));
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glFrontFace(GL_CW);
-    glCullFace(GL_BACK);
-    glEnable(GL_CULL_FACE);
-
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_TRUE);
-    glDepthFunc(GL_LEQUAL);
-    glDepthRange(0.0f, 1.0f);
-
-    // VAO
-    GLuint VertexArrayID;
-    glGenVertexArrays(1, &VertexArrayID);
-    glBindVertexArray(VertexArrayID);
-
-    glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
-
-    printf("Loading textures.\n");
-    load_textures();
-
-    printf("Loading shaders.\n");
-    shader_load_all();
-
-    printf("Creating meshes.\n");
-    init_meshes();
-
-    player_init();
-    camera_init();
-    init_world();
-    init_lighting();
-
-    glUniform1i(sampler, 0);
-
-    // put pointer in center of window
-    glfwSetCursorPos(window, camera.cursor.x, camera.cursor.y);
-}
-
-void deinit()
-{
-    glDeleteBuffers(1, &vbo);
-
-    shader_deinit();
-    window_deinit();
-}
-
-void init_meshes()
-{
-    mesh_load_model(MODEL_FORMAT_STL,"models/donut.stl",&obj);
-    calc_vertex_normals(obj.indices, obj.num_indices, obj.vertices, obj.num_vertices);
-
- 	glGenBuffers(1, &obj.vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, obj.vbo);
-	glBufferData(GL_ARRAY_BUFFER, obj.num_vertices*sizeof(Vertex), obj.vertices, GL_STATIC_DRAW);
-
-    glGenBuffers(1,&obj.ibo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, obj.ibo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, obj.num_indices*sizeof(u32), obj.indices, GL_STATIC_DRAW);
-
-    // ground
-    Vertex floor_vertices[] = {
-        {{0.0f,0.0f,0.0f},{0.0f,0.0f},{0.0f,0.0f,0.0f}},
-        {{0.0f,0.0f,1.0f},{0.0f,10.0f},{0.0f,0.0f,0.0f}},
-        {{1.0f,0.0f,0.0f},{10.0f,0.0f},{0.0f,0.0f,0.0f}},
-        {{1.0f,0.0f,1.0f},{10.0f,10.0f},{0.0f,0.0f,0.0f}}
-    };
-
-    u32 floor_indices[] = {
-        0,2,1,
-        2,3,1
-    };
-
-    ground.num_vertices = 4;
-    ground.vertices = malloc(ground.num_vertices*sizeof(Vertex));
-    memcpy(ground.vertices,floor_vertices,ground.num_vertices*sizeof(Vertex));
-
-    ground.num_indices = 6;
-    ground.indices = malloc(ground.num_indices*sizeof(u32));
-    memcpy(ground.indices,floor_indices,ground.num_indices*sizeof(u32));
-
-    calc_vertex_normals(ground.indices, ground.num_indices, ground.vertices, ground.num_vertices);
-
- 	glGenBuffers(1, &ground.vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, ground.vbo);
-	glBufferData(GL_ARRAY_BUFFER, ground.num_vertices*sizeof(Vertex), ground.vertices, GL_STATIC_DRAW);
-
-    glGenBuffers(1,&ground.ibo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ground.ibo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, ground.num_indices*sizeof(u32), ground.indices, GL_STATIC_DRAW);
-
-    memcpy(&obj.mat.texture,&texture2,sizeof(Texture));
-    memcpy(&ground.mat.texture,&texture1,sizeof(Texture));
-
-}
-
-void load_textures()
-{
-    bool success;
-
-    success = texture_load(&texture1,"textures/grass.png");
-
-    if(!success)
-    {
-        printf("Failed to load texture!\n");
-        return;
-    }
-
-    success = texture_load(&texture2,"textures/donut.png");
-
-    if(!success)
-    {
-        printf("Failed to load texture!\n");
-        return;
-    }
-
-}

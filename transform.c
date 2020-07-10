@@ -135,7 +135,7 @@ Matrix4f* get_wvp_transform()
 
 }
 
-void init_world()
+void transform_world_init()
 {
     world.scale.x = 1.0f;
     world.scale.y = 1.0f;

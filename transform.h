@@ -10,7 +10,7 @@ typedef struct
 
 extern World world;
 
-void init_world();
+void transform_world_init();
 
 Matrix4f* get_world_transform();
 Matrix4f* get_wvp_transform();

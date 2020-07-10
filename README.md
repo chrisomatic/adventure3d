@@ -19,13 +19,12 @@ This is a work-in-progress 3d game.
 ## Controls
 
 ```
-
     w = Move Forward
     a = Strafe Left
     s = Move Backwards
     d = Strafe Right
 
-    arrow keys = look around
+    mouse movement  = look around
 
     shift = run
     space = Jump
@@ -33,4 +32,6 @@ This is a work-in-progress 3d game.
     tab = toggle wireframe
     m = Toggle camera mode
 
+    arrow-up   = increase ambient brightness
+    arrow-down = decrease ambient brightness
 ```

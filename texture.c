@@ -1,9 +1,11 @@
-#include <GL/gl.h>
+#include <GL/glew.h>
+
 #include <stdbool.h>
 #include "texture.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "util/stb_image.h"
+
 
 bool texture_load(Texture* t, const char* filepath)
 {
@@ -41,4 +43,29 @@ void texture_bind(Texture* t, GLenum texture_unit)
 void texture_unbind()
 {
     glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+Texture texture1 = {0};
+Texture texture2 = {0};
+
+void texture_load_all()
+{
+    bool success;
+
+    success = texture_load(&texture1,"textures/grass.png");
+
+    if(!success)
+    {
+        printf("Failed to load texture!\n");
+        return;
+    }
+
+    success = texture_load(&texture2,"textures/donut.png");
+
+    if(!success)
+    {
+        printf("Failed to load texture!\n");
+        return;
+    }
+
 }
