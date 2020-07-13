@@ -19,6 +19,8 @@
 #include "player.h"
 #include "lighting.h"
 #include "mesh.h"
+#include "sky.h"
+#include "terrain.h"
 
 // =========================
 // Global Vars
@@ -70,6 +72,8 @@ int main()
 // Functions
 // =========================
 
+GLuint vao;
+
 void init()
 {
     bool success;
@@ -94,9 +98,8 @@ void init()
     glDepthRange(0.0f, 1.0f);
 
     // VAO
-    GLuint VertexArrayID;
-    glGenVertexArrays(1, &VertexArrayID);
-    glBindVertexArray(VertexArrayID);
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
 
     glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
@@ -108,6 +111,9 @@ void init()
 
     printf("Creating meshes.\n");
     mesh_init_all();
+
+    printf("Building terrain.\n");
+    terrain_build("textures/heightmap.png");
 
     player_init();
     camera_init();
@@ -140,8 +146,8 @@ void simulate()
     copy_v3f(&dir, &light.direction);
     normalize_v3f(&dir);
 
-    glUniform3f(dir_light_location.direction, dir.x, dir.y, dir.z);
-    glUniform1f(dir_light_location.diffuse_intensity, light.diffuse_intensity);
+    shader_set_float(program, "dl.diffuse_intensity", light.diffuse_intensity);
+    shader_set_vec3(program, "dl.direction", dir.x, dir.y, dir.z);
 }
 
 void render()
@@ -152,20 +158,27 @@ void render()
     Matrix4f* _world;
     Matrix4f* _wvp;
 
-    world_set_scale(100.0f,1.0f,100.0f);
+    sky_render();
+
+    glUseProgram(program);
+
+    world_set_scale(256.0f,1.0f,256.0f);
     world_set_rotation(0.0f,0.0f,0.0f);
     world_set_position(0.0f,0.0f,0.0f);
 
     _world = get_world_transform();
     _wvp   = get_wvp_transform();
 
-    glUniformMatrix4fv(world_location,1,GL_TRUE,(const GLfloat*)_world);
-    glUniformMatrix4fv(wvp_location,1,GL_TRUE,(const GLfloat*)_wvp);
+    shader_set_mat4(program, "world", _world);
+    shader_set_mat4(program, "wvp", _wvp);
 
     glUniform3f(dir_light_location.color, light.color.x, light.color.y, light.color.z);
     glUniform1f(dir_light_location.ambient_intensity, light.ambient_intensity);
+    glUniform1i(wireframe_location, show_wireframe);
 
-    mesh_render(&terrain);
+    glBindVertexArray(vao);
+
+    terrain_render();
 
     world_set_scale(1.0f,1.0f,1.0f);
     world_set_rotation(10*world.time,10*world.time,0.0f);
@@ -174,8 +187,10 @@ void render()
     _world = get_world_transform();
     _wvp   = get_wvp_transform();
 
-    glUniformMatrix4fv(world_location,1,GL_TRUE,(const GLfloat*)_world);
-    glUniformMatrix4fv(wvp_location,1,GL_TRUE,(const GLfloat*)_wvp);
+    shader_set_mat4(program, "world", _world);
+    shader_set_mat4(program, "wvp", _wvp);
+    //glUniformMatrix4fv(world_location,1,GL_TRUE,(const GLfloat*)_world);
+    //glUniformMatrix4fv(wvp_location,1,GL_TRUE,(const GLfloat*)_wvp);
 
     glUniform3f(dir_light_location.color, light.color.x, light.color.y, light.color.z);
     glUniform1f(dir_light_location.ambient_intensity, light.ambient_intensity);

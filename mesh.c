@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include <time.h>
 
 #include <GL/glew.h>
 
@@ -13,7 +12,6 @@
 #include "mesh.h"
 
 Mesh obj = {0};
-Mesh terrain = {0};
 
 bool show_wireframe = false;
 
@@ -221,7 +219,7 @@ void mesh_load_model(ModelFormat format, const char* file_path, Mesh* mesh)
     mesh->indices = malloc(index_count*sizeof(u32));
     memcpy(mesh->indices,indices,index_count*sizeof(u32));
 
-    print_mesh(mesh);
+    //print_mesh(mesh);
 }
 
 void mesh_render(Mesh* mesh)
@@ -236,7 +234,7 @@ void mesh_render(Mesh* mesh)
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)20);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,mesh->ibo);
 
-    if(mesh->mat.texture.data)
+    if(mesh->mat.texture)
         texture_bind(&mesh->mat.texture,GL_TEXTURE0);
 
     if(show_wireframe)
@@ -252,9 +250,9 @@ void mesh_render(Mesh* mesh)
 
 }
 
-static void build_donut()
+static void build_object()
 {
-    mesh_load_model(MODEL_FORMAT_STL,"models/donut.stl",&obj);
+    mesh_load_model(MODEL_FORMAT_STL,"models/monkey.stl",&obj);
     calc_vertex_normals(obj.indices, obj.num_indices, obj.vertices, obj.num_vertices);
 
  	glGenBuffers(1, &obj.vbo);
@@ -265,91 +263,10 @@ static void build_donut()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, obj.ibo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, obj.num_indices*sizeof(u32), obj.indices, GL_STATIC_DRAW);
 
-    memcpy(&obj.mat.texture,&texture2,sizeof(Texture));
-}
-
-#define TERRAIN_GRANULARITY    100
-#define TERRAIN_GRANULARITY_P1 (TERRAIN_GRANULARITY+1)
-#define TERRAIN_VERTEX_COUNT   (TERRAIN_GRANULARITY_P1*TERRAIN_GRANULARITY_P1)
-#define TERRAIN_INDEX_COUNT    (TERRAIN_GRANULARITY*TERRAIN_GRANULARITY*6)
-
-static void build_terrain()
-{
-    srand(time(0));
-
-    Vertex terrain_vertices[TERRAIN_VERTEX_COUNT] = {0};
-    u32    terrain_indices[TERRAIN_INDEX_COUNT]   = {0};
-
-    const float interval = 1.0f/TERRAIN_GRANULARITY;
-
-    //printf("===== TERRAIN =====\n");
-    
-    for(int i = 0; i < TERRAIN_GRANULARITY_P1; ++i)
-    {
-        for(int j = 0; j < TERRAIN_GRANULARITY_P1; ++j)
-        {
-            int index = i*(TERRAIN_GRANULARITY_P1)+j;
-
-            int dir = rand() % 3;
-            float yinc;
-
-            switch(dir)
-            {
-                case 0: yinc = +0.1f; break;
-                case 1: yinc = +0.0f; break;
-                case 2: yinc = -0.1f; break;
-            }
-
-            terrain_vertices[index].position.x = i*interval;
-            terrain_vertices[index].position.y = rand() / (float)RAND_MAX;//index == 0 ? 0.0f : terrain_vertices[index-1].position.y + yinc;
-            terrain_vertices[index].position.z = j*interval;
-
-            terrain_vertices[index].tex_coord.x = 10*i*interval;
-            terrain_vertices[index].tex_coord.y = 10*j*interval;
-
-            /*
-            printf("%d: %f %f %f\n",
-                index,
-                terrain_vertices[index].position.x,
-                terrain_vertices[index].position.y,
-                terrain_vertices[index].position.z);
-            */
-        }
-    }
-
-    for(int i = 0; i < TERRAIN_INDEX_COUNT; i += 6)
-    {
-        terrain_indices[i]   = (i / 6);
-        terrain_indices[i+1] = terrain_indices[i] + TERRAIN_GRANULARITY_P1;
-        terrain_indices[i+2] = terrain_indices[i] + 1;
-        terrain_indices[i+3] = terrain_indices[i+1];
-        terrain_indices[i+4] = terrain_indices[i+1] + 1;;
-        terrain_indices[i+5] = terrain_indices[i+2];;
-    }
-
-    terrain.num_vertices = TERRAIN_VERTEX_COUNT;
-    terrain.vertices = malloc(terrain.num_vertices*sizeof(Vertex));
-    memcpy(terrain.vertices,terrain_vertices,terrain.num_vertices*sizeof(Vertex));
-
-    terrain.num_indices = TERRAIN_INDEX_COUNT;
-    terrain.indices = malloc(terrain.num_indices*sizeof(u32));
-    memcpy(terrain.indices,terrain_indices,terrain.num_indices*sizeof(u32));
-
-    calc_vertex_normals(terrain.indices, terrain.num_indices, terrain.vertices, terrain.num_vertices);
-
- 	glGenBuffers(1, &terrain.vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, terrain.vbo);
-	glBufferData(GL_ARRAY_BUFFER, terrain.num_vertices*sizeof(Vertex), terrain.vertices, GL_STATIC_DRAW);
-
-    glGenBuffers(1,&terrain.ibo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, terrain.ibo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, terrain.num_indices*sizeof(u32), terrain.indices, GL_STATIC_DRAW);
-
-    memcpy(&terrain.mat.texture,&texture1,sizeof(Texture));
+    memcpy(&obj.mat.texture,&texture2,sizeof(GLuint));
 }
 
 void mesh_init_all()
 {
-    build_donut();
-    build_terrain();
+    build_object();
 }

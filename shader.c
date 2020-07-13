@@ -5,47 +5,26 @@
 #include <GL/glew.h>
 
 #include "util.h"
+#include "math3d.h"
 #include "shader.h"
 
-static void shader_add(GLuint program, GLenum shader_type, const char* shader_file_path);
-
 GLuint program;
+GLuint sky_program;
 
 GLuint world_location;
 GLuint wvp_location;
 GLuint sampler;
 
+GLuint wireframe_location;
+
 DirLightLocation dir_light_location;
+
+static void shader_build_program(GLuint* p, const char* vert_shader_path, const char* frag_shader_path);
+static void shader_add(GLuint program, GLenum shader_type, const char* shader_file_path);
 
 void shader_load_all()
 {
-	program = glCreateProgram();
-
-    shader_add(program, GL_VERTEX_SHADER,  "shaders/vert.glsl");
-    shader_add(program, GL_FRAGMENT_SHADER,"shaders/frag.glsl");
-
-	glLinkProgram(program);
-
-	GLint success;
-    glGetProgramiv(program, GL_LINK_STATUS, &success);
-	if (!success)
-    {
-        GLchar info[1000+1] = {0};
-		glGetProgramInfoLog(program, 1000, NULL, info);
-		fprintf(stderr, "Error linking shader program: '%s'\n", info);
-        exit(1);
-	}
-
-    glValidateProgram(program);
-    glGetProgramiv(program, GL_VALIDATE_STATUS, &success);
-    if (!success) {
-        GLchar info[1000+1] = {0};
-        glGetProgramInfoLog(program, 1000, NULL, info);
-        fprintf(stderr, "Invalid shader program: '%s'\n", info);
-        exit(1);
-    }
-
-    glUseProgram(program);
+    shader_build_program(&program,"shaders/basic.vert.glsl","shaders/basic.frag.glsl");
 
     // Get uniform locations
     world_location = glGetUniformLocation(program,"world");
@@ -58,6 +37,8 @@ void shader_load_all()
     dir_light_location.diffuse_intensity = glGetUniformLocation(program, "dl.diffuse_intensity");
     dir_light_location.direction         = glGetUniformLocation(program, "dl.direction");
 
+    wireframe_location = glGetUniformLocation(program,"wireframe");
+
     if(world_location                       == INVALID_UNIFORM_LOCATION ||
        sampler                              == INVALID_UNIFORM_LOCATION ||
        dir_light_location.color             == INVALID_UNIFORM_LOCATION ||
@@ -67,11 +48,44 @@ void shader_load_all()
       ) {
         fprintf(stderr,"Failed to find all shader uniform locations.\n");
     }
+
+    // sky
+    shader_build_program(&sky_program,"shaders/skybox.vert.glsl","shaders/skybox.frag.glsl");
 }
 
 void shader_deinit()
 {
     glDeleteProgram(program);
+}
+
+static void shader_build_program(GLuint* p, const char* vert_shader_path, const char* frag_shader_path)
+{
+	*p = glCreateProgram();
+
+    shader_add(*p, GL_VERTEX_SHADER,  vert_shader_path);
+    shader_add(*p, GL_FRAGMENT_SHADER,frag_shader_path);
+
+	glLinkProgram(*p);
+
+	GLint success;
+    glGetProgramiv(*p, GL_LINK_STATUS, &success);
+	if (!success)
+    {
+        GLchar info[1000+1] = {0};
+		glGetProgramInfoLog(*p, 1000, NULL, info);
+		fprintf(stderr, "Error linking shader program: '%s'\n", info);
+        exit(1);
+	}
+
+    glValidateProgram(*p);
+    glGetProgramiv(*p, GL_VALIDATE_STATUS, &success);
+    if (!success) {
+        GLchar info[1000+1] = {0};
+        glGetProgramInfoLog(*p, 1000, NULL, info);
+        fprintf(stderr, "Invalid shader program: '%s'\n", info);
+        exit(1);
+    }
+
 }
 
 static void shader_add(GLuint program, GLenum shader_type, const char* shader_file_path)
@@ -120,4 +134,24 @@ static void shader_add(GLuint program, GLenum shader_type, const char* shader_fi
 	glAttachShader(program, shader_id);
 
     free(buf);
+}
+
+void shader_set_int(GLuint program, const char* name, int i)
+{
+    glUniform1i(glGetUniformLocation(program, name), i);
+}
+
+void shader_set_float(GLuint program, const char* name, float f)
+{
+    glUniform1f(glGetUniformLocation(program, name), f);
+}
+
+void shader_set_vec3(GLuint program, const char* name, float x, float y, float z)
+{
+    glUniform3f(glGetUniformLocation(program, name), x,y,z);
+}
+
+void shader_set_mat4(GLuint program, const char* name, Matrix4f* m)
+{
+    glUniformMatrix4fv(glGetUniformLocation(program, name), 1, GL_TRUE, &m->m[0][0]);
 }

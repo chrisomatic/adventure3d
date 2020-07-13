@@ -4,15 +4,10 @@
 
 - Make shader program a property of mesh
 - Make shader program for terrain
-- Add scalable triangle count to terrain mesh
-- Make z axis random.
-- Add height field support
-- Make it so camera base is z of height field position
 
 ## Skybox
 
-- Generate cube map
-- Add sky.c sky.h
+- Fix skybox
 
 ## Movement
 
@@ -41,3 +36,8 @@
 - Move init_meshes to mesh file
 - (Rename ground to terrain)
 - Make it so you can't change x,z velocities while midair.
+- Add scalable triangle count to terrain mesh
+- Add height field support
+- Make it so camera base is y of height field position
+- Generate cube map
+- Add sky.c sky.h

@@ -5,6 +5,7 @@
 
 #include "math3d.h"
 #include "settings.h"
+#include "terrain.h"
 #include "player.h"
 
 #include "camera.h"
@@ -165,22 +166,27 @@ static void camera_update_velocity()
     if(player.key_shift)
         max_vel *= 2.0f;
 
+    if(camera.mode == CAMERA_MODE_FREEFORM)
+        max_vel *= 2.0f;
+
     Vector3f target_velocity = {0};
 
     camera.velocity.x = 0.0f;
     camera.velocity.z = 0.0f;
-    camera.velocity.y = 0.0f;
 
-    if(player.key_space && !player.is_in_air)
+    if(camera.mode == CAMERA_MODE_FREEFORM)
+        camera.velocity.y = 0.0f;
+    else 
     {
-        player.is_in_air = true;
-        camera.velocity.y = 0.5f;
+        if(player.key_space && !player.is_in_air)
+        {
+            player.is_in_air = true;
+            camera.velocity.y = 0.5f;
+        }
     }
 
     if(player.key_w_down)
     {
-        printf("Moving forward!\n");
-
         if(camera.mode == CAMERA_MODE_LOCKED_TO_PLAYER)
         {
             copy_v3f(&target_velocity,&camera.target);
@@ -196,8 +202,6 @@ static void camera_update_velocity()
     }
     if(player.key_s_down)
     {
-        printf("Moving backwards!\n");
-
         if(camera.mode == CAMERA_MODE_LOCKED_TO_PLAYER)
         {
             copy_v3f(&target_velocity,&camera.target);
@@ -214,8 +218,6 @@ static void camera_update_velocity()
 
     if(player.key_a_down)
     {
-        printf("Moving left!\n");
-
         Vector3f left;
         cross_v3f(camera.up, camera.target, &left);
         normalize_v3f(&left);
@@ -226,8 +228,6 @@ static void camera_update_velocity()
     }
     if(player.key_d_down)
     {
-        printf("Moving right!\n");
-
         Vector3f right;
         cross_v3f(camera.up, camera.target, &right);
         normalize_v3f(&right);
@@ -241,23 +241,29 @@ static void camera_update_velocity()
 
 static void camera_update_position()
 {
-    if(camera.velocity.x == 0 && camera.velocity.y == 0 && camera.velocity.z == 0)
-        return;
-
     camera.position.x += camera.velocity.x;
     camera.position.y += camera.velocity.y;
     camera.position.z += camera.velocity.z;
 
     // @TODO: Move this code into "player" file
-    if(camera.position.y > player.height)
+    printf("camera position: %f %f %f\n",camera.position.x, camera.position.y, camera.position.z);
+
+    float terrain_height = terrain_get_height(camera.position.x, camera.position.z);
+
+    printf("camera height: %f, terrain height plus: %f\n",camera.position.y,terrain_height+player.height);
+
+    if(camera.mode == CAMERA_MODE_LOCKED_TO_PLAYER)
     {
-        camera.velocity.y -= 0.02f;
-    }
-    else
-    {
-        camera.position.y = player.height;
-        camera.velocity.y = 0.0f;
-        player.is_in_air = false;
+        if(camera.position.y > player.height + terrain_height)
+        {
+            camera.velocity.y -= 0.02f;
+        }
+        else
+        {
+            camera.position.y = player.height + terrain_height;
+            camera.velocity.y = 0.0f;
+            player.is_in_air = false;
+        }
     }
 
 }

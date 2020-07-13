@@ -1,12 +1,12 @@
 #pragma once
 
+#include <stdbool.h>
 #include "util.h"
-#include "texture.h"
 
 typedef struct
 {
     char* name;
-    Texture texture;
+    GLuint texture;
 } Material;
 
 typedef struct
@@ -35,7 +35,6 @@ typedef enum
 extern bool show_wireframe;
 
 extern Mesh obj;
-extern Mesh terrain;
 
 void mesh_init_all();
 void mesh_load_model(ModelFormat format, const char* file_path, Mesh* mesh);
