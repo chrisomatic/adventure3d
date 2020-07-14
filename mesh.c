@@ -224,6 +224,8 @@ void mesh_load_model(ModelFormat format, const char* file_path, Mesh* mesh)
 
 void mesh_render(Mesh* mesh)
 {
+    glBindVertexArray(mesh->vao);
+
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glEnableVertexAttribArray(2);
@@ -252,6 +254,9 @@ void mesh_render(Mesh* mesh)
 
 static void build_object()
 {
+    glGenVertexArrays(1, &obj.vao);
+    glBindVertexArray(obj.vao);
+
     mesh_load_model(MODEL_FORMAT_STL,"models/monkey.stl",&obj);
     calc_vertex_normals(obj.indices, obj.num_indices, obj.vertices, obj.num_vertices);
 

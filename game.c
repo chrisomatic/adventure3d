@@ -72,8 +72,6 @@ int main()
 // Functions
 // =========================
 
-GLuint vao;
-
 void init()
 {
     bool success;
@@ -96,10 +94,6 @@ void init()
     glDepthMask(GL_TRUE);
     glDepthFunc(GL_LEQUAL);
     glDepthRange(0.0f, 1.0f);
-
-    // VAO
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
 
     glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
@@ -159,24 +153,6 @@ void render()
     Matrix4f* _wvp;
 
     sky_render();
-
-    glUseProgram(program);
-
-    world_set_scale(256.0f,1.0f,256.0f);
-    world_set_rotation(0.0f,0.0f,0.0f);
-    world_set_position(0.0f,0.0f,0.0f);
-
-    _world = get_world_transform();
-    _wvp   = get_wvp_transform();
-
-    shader_set_mat4(program, "world", _world);
-    shader_set_mat4(program, "wvp", _wvp);
-
-    glUniform3f(dir_light_location.color, light.color.x, light.color.y, light.color.z);
-    glUniform1f(dir_light_location.ambient_intensity, light.ambient_intensity);
-    glUniform1i(wireframe_location, show_wireframe);
-
-    glBindVertexArray(vao);
 
     terrain_render();
 

@@ -7,5 +7,5 @@ Player player = {0};
 void player_init()
 {
     memset(&player,0,sizeof(Player));
-    player.height = 1.4f; // meters
+    player.height = 10*1.4f; // meters
 }

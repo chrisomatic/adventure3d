@@ -13,6 +13,7 @@ typedef struct
 {
     Material mat;
 
+    GLuint vao;
     GLuint vbo;
     GLuint ibo;
 

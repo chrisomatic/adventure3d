@@ -161,7 +161,7 @@ static void camera_update_velocity()
     if(player.is_in_air)
         return; // can't adjust velocity while in air
 
-    float max_vel = 0.1f;
+    float max_vel = 0.5f;
 
     if(player.key_shift)
         max_vel *= 2.0f;
@@ -181,7 +181,7 @@ static void camera_update_velocity()
         if(player.key_space && !player.is_in_air)
         {
             player.is_in_air = true;
-            camera.velocity.y = 0.5f;
+            camera.velocity.y = 1.0f;
         }
     }
 

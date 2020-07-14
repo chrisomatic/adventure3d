@@ -11,6 +11,8 @@
 #include "math3d.h"
 #include "texture.h"
 #include "terrain.h"
+#include "shader.h"
+#include "transform.h"
 #include "mesh.h"
 
 #define TERRAIN_GRANULARITY    256
@@ -20,8 +22,29 @@
 
 Mesh terrain = {0};
 
+static float terrain_heights[TERRAIN_GRANULARITY][TERRAIN_GRANULARITY] = {0.0f};
+
+static float terrain_scale = 256.0f;
+
 void terrain_render()
 {
+    glUseProgram(program);
+
+    world_set_scale(terrain_scale,1.0f,terrain_scale);
+    world_set_rotation(0.0f,0.0f,0.0f);
+    world_set_position(0.0f,0.0f,0.0f);
+
+    Matrix4f* world = get_world_transform();
+    Matrix4f* wvp   = get_wvp_transform();
+
+    shader_set_mat4(program, "world", world);
+    shader_set_mat4(program, "wvp", wvp);
+
+    //glUniform3f(dir_light_location.color, light.color.x, light.color.y, light.color.z);
+    //glUniform1f(dir_light_location.ambient_intensity, light.ambient_intensity);
+    glUniform1i(wireframe_location, show_wireframe);
+
+    glBindVertexArray(terrain.vao);
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glEnableVertexAttribArray(2);
@@ -47,28 +70,56 @@ void terrain_render()
     texture_unbind();
 }
 
-static unsigned char* heightdata;
-
 float terrain_get_height(float x, float z)
 {
-    if(!heightdata)
+    float terrain_x = -x - 0.0f;
+    float terrain_z = -z - 0.0f;
+
+    float grid_square_size = terrain_scale * (1.0f / TERRAIN_GRANULARITY);
+
+    int grid_x = (int)floor(terrain_x / grid_square_size);
+    if(grid_x < 0 || grid_x >= TERRAIN_GRANULARITY)
         return 0.0f;
 
-    int _x = floor(-x);
-    if(_x < 0 || _x > TERRAIN_GRANULARITY_P1)
+    int grid_z = (int)floor(terrain_z / grid_square_size);
+    if(grid_z < 0 || grid_z >= TERRAIN_GRANULARITY)
         return 0.0f;
 
-    int _z = floor(-z);
-    if(_z < 0 || _z > TERRAIN_GRANULARITY_P1)
-        return 0.0f;
+    float x_coord = fmod(terrain_x,grid_square_size)/grid_square_size;
+    float z_coord = fmod(terrain_z,grid_square_size)/grid_square_size;
+    
+    //printf("grid x: %d z: %d\n",grid_x, grid_z);
 
-    return (10*heightdata[_z*TERRAIN_GRANULARITY_P1+_x]/255.0f);
+    float height = 0.0f;
+
+    if (x_coord <= (1.0f-z_coord))
+    {
+        Vector3f p1  = {0, terrain_heights[grid_x][grid_z], 0};
+        Vector3f p2  = {1, terrain_heights[grid_x+1][grid_z], 0};
+        Vector3f p3  = {0, terrain_heights[grid_x][grid_z+1], 1};
+        Vector2f pos = {x_coord,z_coord};
+
+        height = barry_centric(p1,p2,p3,pos);
+    }
+    else
+    {
+        Vector3f p1  = {1, terrain_heights[grid_x+1][grid_z], 0};
+        Vector3f p2  = {1, terrain_heights[grid_x+1][grid_z], 1};
+        Vector3f p3  = {0, terrain_heights[grid_x][grid_z+1], 1};
+        Vector2f pos = {x_coord,z_coord};
+
+        height = barry_centric(p1,p2,p3,pos);
+    }
+    return (height);
 }
 
 void terrain_build(const char* heightmap)
 {
+    glGenVertexArrays(1, &terrain.vao);
+    glBindVertexArray(terrain.vao);
+
     int x,y,n;
-    heightdata = stbi_load(heightmap, &x, &y, &n, 0);
+    unsigned char* heightdata = stbi_load(heightmap, &x, &y, &n, 0);
 
     if(!heightdata)
     {
@@ -100,8 +151,11 @@ void terrain_build(const char* heightmap)
         {
             int index = i*(x)+j;
 
+            float norm_height = (heightdata[index]/8.0f);
+            terrain_heights[i][j] = norm_height;
+
             terrain_vertices[index].position.x = i*interval;
-            terrain_vertices[index].position.y = 10*(heightdata[index]/255.0f);
+            terrain_vertices[index].position.y = -terrain_heights[i][j];
             terrain_vertices[index].position.z = j*interval;
 
             terrain_vertices[index].tex_coord.x = 10*i*interval;

@@ -52,3 +52,6 @@ void calc_vertex_normals(const unsigned int* indices, unsigned int index_count, 
 // matrix
 void dot_product_m4f(Matrix4f a, Matrix4f b, Matrix4f* result);
 void print_m4f(const char* title, Matrix4f w);
+
+// other
+float barry_centric(Vector3f p1, Vector3f p2, Vector3f p3, Vector2f pos);
