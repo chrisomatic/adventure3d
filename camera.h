@@ -36,8 +36,3 @@ void camera_init();
 void camera_update();
 void camera_update_angle(float cursor_x, float cursor_y);
 void get_camera_transform(Matrix4f* mat);
-
-void camera_set_velocity(float x, float y, float z);
-void camera_set_position(float x, float y, float z);
-void camera_set_target(float x, float y, float z);
-void camera_set_up(float x, float y, float z);
