@@ -20,6 +20,7 @@ int view_height = STARTING_VIEW_HEIGHT;
 static void window_size_callback(GLFWwindow* window, int window_width, int window_height);
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 static void key_callback(GLFWwindow* window, int key, int scan_code, int action, int mods);
+static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 
 bool window_init()
 {
@@ -50,6 +51,7 @@ bool window_init()
     glfwSetWindowSizeCallback(window,window_size_callback);
     glfwSetKeyCallback(window, key_callback);
     glfwSetCursorPosCallback(window, cursor_position_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -88,7 +90,19 @@ static void window_size_callback(GLFWwindow* window, int window_width, int windo
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
-    camera_update_angle(xpos, ypos);
+    int mode = glfwGetInputMode(window,GLFW_CURSOR);
+    if(mode == GLFW_CURSOR_DISABLED)
+        camera_update_angle(xpos, ypos);
+}
+
+static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    {
+        int mode = glfwGetInputMode(window,GLFW_CURSOR);
+        if(mode == GLFW_CURSOR_NORMAL)
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    }
 }
 
 static void key_callback(GLFWwindow* window, int key, int scan_code, int action, int mods)
@@ -133,6 +147,14 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
             case GLFW_KEY_DOWN:
                 light.ambient_intensity -= 0.05f;
                 break;
+            case GLFW_KEY_ESCAPE:
+            {
+                int mode = glfwGetInputMode(window,GLFW_CURSOR);
+                if(mode == GLFW_CURSOR_DISABLED)
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                else
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            }   break;
         }
     }
     else if(action == GLFW_RELEASE)

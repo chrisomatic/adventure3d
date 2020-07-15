@@ -50,7 +50,7 @@ int main()
     for(;;)
     {
         glfwPollEvents();
-        if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS || glfwWindowShouldClose(window) != 0)
+        if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS || glfwWindowShouldClose(window) != 0)
             break;
 
         simulate();
