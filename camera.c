@@ -126,8 +126,6 @@ void camera_update()
 
 static void camera_update_velocity()
 {
-    float ground_friction = 0.02f;
-
     if(camera.mode == CAMERA_MODE_LOCKED_TO_PLAYER && player.is_in_air)
         return; // can't adjust velocity while in air
 
@@ -135,66 +133,10 @@ static void camera_update_velocity()
         if(player.is_in_air)
             player.is_in_air = false;
 
-    if(!player.is_in_air)
-    {
-        // ground friction
-        if(ABS(camera.velocity.x) > 0.0f)
-        {
-            if(camera.velocity.x < 0)
-            {
-                if(camera.velocity.x + ground_friction > 0.0f)
-                    camera.velocity.x = 0.0f;
-                else
-                    camera.velocity.x += ground_friction;    
-            }
-            else
-            {
-                if(camera.velocity.x - ground_friction < 0.0f)
-                    camera.velocity.x = 0.0f;
-                else
-                    camera.velocity.x -= ground_friction;
-            }
-        }
 
-        if(ABS(camera.velocity.z) > 0.0f)
-        {
-            if(camera.velocity.z < 0)
-            {
-                if(camera.velocity.z + ground_friction > 0.0f)
-                    camera.velocity.z = 0.0f;
-                else
-                    camera.velocity.z += ground_friction;    
-            }
-            else
-            {
-                if(camera.velocity.z - ground_friction < 0.0f)
-                    camera.velocity.z = 0.0f;
-                else
-                    camera.velocity.z -= ground_friction;
-            }
-        }
-
-        if(ABS(camera.velocity.y) > 0.0f)
-        {
-            if(camera.velocity.y < 0)
-            {
-                if(camera.velocity.y + ground_friction > 0.0f)
-                    camera.velocity.y = 0.0f;
-                else
-                    camera.velocity.y += ground_friction;    
-            }
-            else
-            {
-                if(camera.velocity.y - ground_friction < 0.0f)
-                    camera.velocity.y = 0.0f;
-                else
-                    camera.velocity.y -= ground_friction;
-            }
-        }
-    }
-
-    float accel   = 0.1f;
-    float max_vel = 0.5f;
+    float accel    = 0.1f;
+    float max_vel  = 0.8f;
+    float friction_factor = 0.02f;
 
     if(player.key_shift)
     {
@@ -208,49 +150,43 @@ static void camera_update_velocity()
         max_vel *= 2.0f;
     }
 
-    Vector3f target_velocity = {0};
+    Vector3f target_dir = {camera.target.x, camera.target.y, camera.target.z};
 
-    //camera.velocity.x = 0.0f;
-    //camera.velocity.z = 0.0f;
-
-    if(camera.mode == CAMERA_MODE_LOCKED_TO_PLAYER)
+    if(player.key_space)
     {
-        if(player.key_space && !player.is_in_air)
-        {
-            // jump
-            camera.velocity.y = 1.5f;
-        }
+        // jump
+        camera.velocity.y = 1.5f;
     }
 
     if(player.key_w_down)
     {
         if(camera.mode == CAMERA_MODE_LOCKED_TO_PLAYER)
         {
-            copy_v3f(&target_velocity,&camera.target);
-            target_velocity.y = 0.0f;
-            normalize_v3f(&target_velocity);
+            copy_v3f(&target_dir,&camera.target);
+            target_dir.y = 0.0f;
+            normalize_v3f(&target_dir);
         }
         else
-            copy_v3f(&target_velocity,&camera.target);
+            copy_v3f(&target_dir,&camera.target);
 
-        camera.velocity.x += -accel * target_velocity.x;
-        camera.velocity.y += -accel * target_velocity.y;
-        camera.velocity.z += -accel * target_velocity.z;
+        camera.velocity.x += -accel * target_dir.x;
+        camera.velocity.y += -accel * target_dir.y;
+        camera.velocity.z += -accel * target_dir.z;
     }
     if(player.key_s_down)
     {
         if(camera.mode == CAMERA_MODE_LOCKED_TO_PLAYER)
         {
-            copy_v3f(&target_velocity,&camera.target);
-            target_velocity.y = 0.0f;
-            normalize_v3f(&target_velocity);
+            copy_v3f(&target_dir,&camera.target);
+            target_dir.y = 0.0f;
+            normalize_v3f(&target_dir);
         }
         else
-            copy_v3f(&target_velocity,&camera.target);
+            copy_v3f(&target_dir,&camera.target);
 
-        camera.velocity.x += +accel * target_velocity.x;
-        camera.velocity.y += +accel * target_velocity.y;
-        camera.velocity.z += +accel * target_velocity.z;
+        camera.velocity.x += +accel * target_dir.x;
+        camera.velocity.y += +accel * target_dir.y;
+        camera.velocity.z += +accel * target_dir.z;
     }
 
     if(player.key_a_down)
@@ -274,24 +210,42 @@ static void camera_update_velocity()
         camera.velocity.z += +accel * right.z;
     }
 
-    // lock to max-vel
+    if(!player.is_in_air)
+    {
+        // friction
+        if(ABS(camera.velocity.x) > 0.0f || ABS(camera.velocity.y) > 0.0f || ABS(camera.velocity.z) > 0.0f)
+        {
+            Vector3f friction = {-camera.velocity.x, -camera.velocity.y, -camera.velocity.z};
 
-    if(ABS(camera.velocity.x) > max_vel)
-    {
-        if(camera.velocity.x < 0) camera.velocity.x = -1*max_vel;
-        else                      camera.velocity.x = max_vel;
-    }
-    if(ABS(camera.velocity.z) > max_vel)
-    {
-        if(camera.velocity.z < 0) camera.velocity.z = -1*max_vel;
-        else                      camera.velocity.z = max_vel;
-    }
-    if(camera.mode == CAMERA_MODE_FREEFORM && ABS(camera.velocity.y) > max_vel)
-    {
-        if(camera.velocity.y < 0) camera.velocity.y = -1*max_vel;
-        else                      camera.velocity.y = max_vel;
+            normalize_v3f(&friction);
+            friction.x *= friction_factor;
+            friction.y *= friction_factor;
+            friction.z *= friction_factor;
+
+            camera.velocity.x += friction.x;
+            camera.velocity.y += friction.y;
+            camera.velocity.z += friction.z;
+        }
     }
 
+    float velocity_magnitude = sqrt(camera.velocity.x*camera.velocity.x + 
+                                    //camera.velocity.y*camera.velocity.y + 
+                                    camera.velocity.z*camera.velocity.z );
+
+    if(velocity_magnitude > max_vel)
+    {
+        // set velocity to max
+        normalize_v3f(&camera.velocity);
+        camera.velocity.x *= max_vel;
+        //camera.velocity.y *= max_vel;
+        camera.velocity.z *= max_vel;
+    }
+    else if(velocity_magnitude < 0)
+    {
+        camera.velocity.x = 0;
+        camera.velocity.y = 0;
+        camera.velocity.z = 0;
+    }
 }
 
 static void camera_update_position()
@@ -301,11 +255,7 @@ static void camera_update_position()
     camera.position.z += camera.velocity.z;
 
     // @TODO: Move this code into "player" file
-    printf("camera position: %f %f %f\n",camera.position.x, camera.position.y, camera.position.z);
-
     float terrain_height = terrain_get_height(camera.position.x, camera.position.z);
-
-    printf("camera height: %f, terrain height plus: %f\n",camera.position.y,terrain_height+player.height);
 
     if(camera.mode == CAMERA_MODE_LOCKED_TO_PLAYER)
     {
@@ -316,10 +266,7 @@ static void camera_update_position()
             camera.velocity.y -= 0.05f;
 
             if(camera.position.y > player.height + terrain_height + margin_of_error)
-            {
                 player.is_in_air = true;
-                printf("In Air!\n");
-            }
         }
         else
         {
