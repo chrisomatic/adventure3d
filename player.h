@@ -11,6 +11,7 @@ typedef struct
     bool key_space;
     bool key_shift;
     bool is_in_air;
+    bool jumped;
 } Player;
 
 extern Player player;
