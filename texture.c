@@ -112,5 +112,17 @@ void texture_load_all()
         "textures/skybox/back.jpg"
     };
 
+/*
+
+    char* cube[] = {
+        "textures/skybox2/sky_1.png",
+        "textures/skybox2/sky_2.png",
+        "textures/skybox2/sky_3.png",
+        "textures/skybox2/sky_4.png",
+        "textures/skybox2/sky_5.png",
+        "textures/skybox2/sky_6.png"
+    };
+*/
+
     texture_load_cube(&texture_cube,cube,6);
 }

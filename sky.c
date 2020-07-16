@@ -121,10 +121,9 @@ void sky_render()
     glDepthFunc(GL_LEQUAL);
     glUseProgram(sky_program);
 
-	world_set_scale(1000.0f, 1000.0f, 1000.0f);
+	world_set_scale(20.0f, 20.0f, 20.0f);
 	world_set_rotation(0.0f, 0.0f, 180.0f);
-	world_set_position(camera.position.x, camera.position.y, camera.position.z);
-	printf("camera position: %f %f %f\n",camera.position.x, camera.position.y, camera.position.z);
+	world_set_position(-camera.position.x,-camera.position.y,-camera.position.z);
 
     Matrix4f* wvp = get_wvp_transform();
     shader_set_mat4(sky_program, "wvp", wvp);
