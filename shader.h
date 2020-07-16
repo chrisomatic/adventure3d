@@ -2,7 +2,7 @@
 
 #include "math3d.h"
 
-#define MAX_SHADER_LEN 1024
+#define MAX_SHADER_LEN 2048
 #define INVALID_UNIFORM_LOCATION 0xFFFFFFFF
 
 typedef struct {

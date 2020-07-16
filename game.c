@@ -155,6 +155,7 @@ void render()
 
     terrain_render();
 
+    // object
     world_set_scale(1.0f,1.0f,1.0f);
     world_set_rotation(10*world.time,10*world.time,0.0f);
     world_set_position(0.0f,10.0f*sinf(world.time),40.0f); //ABS(50.0f*sinf(world.time)));
@@ -162,19 +163,21 @@ void render()
     _world = get_world_transform();
     _wvp   = get_wvp_transform();
 
-    shader_set_mat4(program, "world", _world);
-    shader_set_mat4(program, "wvp", _wvp);
-    //glUniformMatrix4fv(world_location,1,GL_TRUE,(const GLfloat*)_world);
-    //glUniformMatrix4fv(wvp_location,1,GL_TRUE,(const GLfloat*)_wvp);
+    //shader_set_mat4(program, "world", _world);
+    //shader_set_mat4(program, "wvp", _wvp);
+
+    glUniformMatrix4fv(world_location,1,GL_TRUE,(const GLfloat*)_world);
+    glUniformMatrix4fv(wvp_location,1,GL_TRUE,(const GLfloat*)_wvp);
 
     glUniform3f(dir_light_location.color, light.color.x, light.color.y, light.color.z);
     glUniform1f(dir_light_location.ambient_intensity, light.ambient_intensity);
+    glUniform3f(dir_light_location.direction, light.direction.x, light.direction.y, light.direction.z);
+    glUniform1f(dir_light_location.diffuse_intensity, light.diffuse_intensity);
 
     mesh_render(&obj);
 
     sky_render();
 
-    // Swap buffers
     glfwSwapBuffers(window);
 }
 

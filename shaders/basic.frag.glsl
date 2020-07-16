@@ -37,10 +37,9 @@ void main()
         }
         else
         {
-            diffuse_color = vec4(0, 0, 0, 0);
+            diffuse_color = vec4(0.0, 0.0, 0.0, 0.0);
         }
 
         frag_color = texture2D(sampler, tex_coord0.xy) * (ambient_color + diffuse_color);
-        //frag_color = vec4(0.5,0.5,0.5,1.0) * (ambient_color + diffuse_color);
     }
 };

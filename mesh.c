@@ -260,6 +260,11 @@ static void build_object()
     mesh_load_model(MODEL_FORMAT_STL,"models/monkey.stl",&obj);
     calc_vertex_normals(obj.indices, obj.num_indices, obj.vertices, obj.num_vertices);
 
+    for(int i = 0; i < obj.num_vertices; ++i)
+    {
+        printf("normal: %f %f %f\n",obj.vertices[i].normal.x, obj.vertices[i].normal.y, obj.vertices[i].normal.z);
+    }
+
  	glGenBuffers(1, &obj.vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, obj.vbo);
 	glBufferData(GL_ARRAY_BUFFER, obj.num_vertices*sizeof(Vertex), obj.vertices, GL_STATIC_DRAW);

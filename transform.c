@@ -107,9 +107,9 @@ Matrix4f* get_world_transform()
 
     memset(&world_trans,0,sizeof(Matrix4f));
 
-    dot_product_m4f(world_trans,  translate_trans,        &world_trans);
-    dot_product_m4f(world_trans,  rotation_trans,         &world_trans);
-    dot_product_m4f(world_trans,  scale_trans,            &world_trans);
+    dot_product_m4f(identity_m4f,  translate_trans, &world_trans);
+    dot_product_m4f(world_trans,   rotation_trans,  &world_trans);
+    dot_product_m4f(world_trans,   scale_trans,     &world_trans);
 
     return &world_trans;
 }
