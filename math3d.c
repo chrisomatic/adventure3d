@@ -57,6 +57,14 @@ void normalize_v3f(Vector3f* v)
 {
     float len = sqrt(v->x * v->x + v->y*v->y + v->z*v->z);
 
+    if(len == 0)
+    {
+        v->x = 0.0f;
+        v->y = 0.0f;
+        v->z = 0.0f;
+        return;
+    }
+
     v->x /= len;
     v->y /= len;
     v->z /= len;

@@ -24,53 +24,6 @@ const float sky_vertices[] = {
     +1.0f,+1.0f,+1.0f
 };
 
-/*
-float sky_vertices[] = {
-	// positions          
-	-1.0f,  1.0f, -1.0f,
-	-1.0f, -1.0f, -1.0f,
-	 1.0f, -1.0f, -1.0f,
-	 1.0f, -1.0f, -1.0f,
-	 1.0f,  1.0f, -1.0f,
-	-1.0f,  1.0f, -1.0f,
-
-	-1.0f, -1.0f,  1.0f,
-	-1.0f, -1.0f, -1.0f,
-	-1.0f,  1.0f, -1.0f,
-	-1.0f,  1.0f, -1.0f,
-	-1.0f,  1.0f,  1.0f,
-	-1.0f, -1.0f,  1.0f,
-
-	 1.0f, -1.0f, -1.0f,
-	 1.0f, -1.0f,  1.0f,
-	 1.0f,  1.0f,  1.0f,
-	 1.0f,  1.0f,  1.0f,
-	 1.0f,  1.0f, -1.0f,
-	 1.0f, -1.0f, -1.0f,
-
-	-1.0f, -1.0f,  1.0f,
-	-1.0f,  1.0f,  1.0f,
-	 1.0f,  1.0f,  1.0f,
-	 1.0f,  1.0f,  1.0f,
-	 1.0f, -1.0f,  1.0f,
-	-1.0f, -1.0f,  1.0f,
-
-	-1.0f,  1.0f, -1.0f,
-	 1.0f,  1.0f, -1.0f,
-	 1.0f,  1.0f,  1.0f,
-	 1.0f,  1.0f,  1.0f,
-	-1.0f,  1.0f,  1.0f,
-	-1.0f,  1.0f, -1.0f,
-
-	-1.0f, -1.0f, -1.0f,
-	-1.0f, -1.0f,  1.0f,
-	 1.0f, -1.0f, -1.0f,
-	 1.0f, -1.0f, -1.0f,
-	-1.0f, -1.0f,  1.0f,
-	 1.0f, -1.0f,  1.0f
-};
-*/
-
 const u32 sky_indices[] = {
     0,1,4,1,5,4,
     1,3,5,3,7,5,
@@ -79,17 +32,6 @@ const u32 sky_indices[] = {
     0,2,1,1,2,3,
     4,5,6,5,7,6
 };
-
-/*
-const u32 sky_indices[] = {
-    0,4,1,1,4,5,
-    1,5,3,3,5,7,
-    3,7,2,2,7,6,
-    2,6,0,0,6,4,
-    0,2,1,1,2,3,
-    4,6,5,5,6,7
-};
-*/
 
 static GLuint sky_vao;
 static GLuint sky_vbo;
@@ -121,7 +63,7 @@ void sky_render()
     glDepthFunc(GL_LEQUAL);
     glUseProgram(sky_program);
 
-	world_set_scale(20.0f, 20.0f, 20.0f);
+	world_set_scale(1.0f, 1.0f, 1.0f);
 	world_set_rotation(0.0f, 0.0f, 180.0f);
 	world_set_position(-camera.position.x,-camera.position.y,-camera.position.z);
 
