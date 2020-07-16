@@ -133,7 +133,6 @@ Matrix4f* get_wvp_transform()
     dot_product_m4f(wvp_trans,    scale_trans,            &wvp_trans);
 
     return &wvp_trans;
-
 }
 
 Matrix4f* get_vp_transform()
