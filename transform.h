@@ -14,6 +14,7 @@ void transform_world_init();
 
 Matrix4f* get_world_transform();
 Matrix4f* get_wvp_transform();
+Matrix4f* get_vp_transform();
 
 void world_set_position(float x, float y, float z);
 void world_set_rotation(float x, float y, float z);

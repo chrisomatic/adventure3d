@@ -12,7 +12,7 @@
 
 #define FOV      96.0f 
 #define Z_NEAR    1.0f
-#define Z_FAR   256.0f
+#define Z_FAR   1000.0f
 
 extern int view_width;
 extern int view_height;

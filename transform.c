@@ -17,6 +17,7 @@ static Matrix4f camera_rotate_trans    = {0};
 
 static Matrix4f world_trans            = {0};
 static Matrix4f wvp_trans              = {0};
+static Matrix4f vp_trans               = {0};
 
 World world = {0};
 
@@ -133,6 +134,21 @@ Matrix4f* get_wvp_transform()
 
     return &wvp_trans;
 
+}
+
+Matrix4f* get_vp_transform()
+{
+    get_perspective_transform(&perspective_trans);
+    get_translate_transform(&camera_translate_trans, camera.position);
+    get_camera_transform(&camera_rotate_trans);
+
+    memset(&vp_trans,0,sizeof(Matrix4f));
+
+    dot_product_m4f(identity_m4f, perspective_trans,     &vp_trans);
+    dot_product_m4f(vp_trans,     camera_rotate_trans,    &vp_trans);
+    dot_product_m4f(vp_trans,     camera_translate_trans, &vp_trans);
+
+    return &vp_trans;
 }
 
 void transform_world_init()

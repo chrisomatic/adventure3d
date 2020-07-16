@@ -113,6 +113,7 @@ void init()
     camera_init();
     transform_world_init();
     lighting_init();
+    sky_init();
 
     glUniform1i(sampler, 0);
 
@@ -152,8 +153,6 @@ void render()
     Matrix4f* _world;
     Matrix4f* _wvp;
 
-    sky_render();
-
     terrain_render();
 
     world_set_scale(1.0f,1.0f,1.0f);
@@ -172,6 +171,8 @@ void render()
     glUniform1f(dir_light_location.ambient_intensity, light.ambient_intensity);
 
     mesh_render(&obj);
+
+    sky_render();
 
     // Swap buffers
     glfwSwapBuffers(window);

@@ -9,7 +9,9 @@
 #include "texture.h"
 #include "transform.h"
 #include "shader.h"
+#include "camera.h"
 #include "sky.h"
+
 
 const float sky_vertices[] = {
     -1.0f,-1.0f,-1.0f,
@@ -22,15 +24,63 @@ const float sky_vertices[] = {
     +1.0f,+1.0f,+1.0f
 };
 
-const u32 sky_indices2[] = {
+/*
+float sky_vertices[] = {
+	// positions          
+	-1.0f,  1.0f, -1.0f,
+	-1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+	 1.0f,  1.0f, -1.0f,
+	-1.0f,  1.0f, -1.0f,
+
+	-1.0f, -1.0f,  1.0f,
+	-1.0f, -1.0f, -1.0f,
+	-1.0f,  1.0f, -1.0f,
+	-1.0f,  1.0f, -1.0f,
+	-1.0f,  1.0f,  1.0f,
+	-1.0f, -1.0f,  1.0f,
+
+	 1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+
+	-1.0f, -1.0f,  1.0f,
+	-1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f, -1.0f,  1.0f,
+	-1.0f, -1.0f,  1.0f,
+
+	-1.0f,  1.0f, -1.0f,
+	 1.0f,  1.0f, -1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	-1.0f,  1.0f,  1.0f,
+	-1.0f,  1.0f, -1.0f,
+
+	-1.0f, -1.0f, -1.0f,
+	-1.0f, -1.0f,  1.0f,
+	 1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+	-1.0f, -1.0f,  1.0f,
+	 1.0f, -1.0f,  1.0f
+};
+*/
+
+const u32 sky_indices[] = {
     0,1,4,1,5,4,
     1,3,5,3,7,5,
     3,2,7,2,6,7,
     2,0,6,0,4,6,
-    0,1,2,1,3,2,
+    0,2,1,1,2,3,
     4,5,6,5,7,6
 };
 
+/*
 const u32 sky_indices[] = {
     0,4,1,1,4,5,
     1,5,3,3,5,7,
@@ -39,6 +89,7 @@ const u32 sky_indices[] = {
     0,2,1,1,2,3,
     4,6,5,5,6,7
 };
+*/
 
 static GLuint sky_vao;
 static GLuint sky_vbo;
@@ -47,10 +98,11 @@ static GLuint sky_ibo;
 void sky_init()
 {
     glGenVertexArrays(1, &sky_vao);
-    glBindVertexArray(sky_vao);
-
     glGenBuffers(1, &sky_vbo);
+
+    glBindVertexArray(sky_vao);
     glBindBuffer(GL_ARRAY_BUFFER, sky_vbo);
+
     glBufferData(GL_ARRAY_BUFFER, sizeof(sky_vertices), &sky_vertices, GL_STATIC_DRAW);
 
     glGenBuffers(1,&sky_ibo);
@@ -69,22 +121,19 @@ void sky_render()
     glDepthFunc(GL_LEQUAL);
     glUseProgram(sky_program);
 
-    world_set_scale(100.0f,100.0f,100.0f);
-    world_set_rotation(0.0f,0.0f,0.0f);
-    world_set_position(0.0f,0.0f,0.0f);
+	world_set_scale(1000.0f, 1000.0f, 1000.0f);
+	world_set_rotation(0.0f, 0.0f, 180.0f);
+	world_set_position(camera.position.x, camera.position.y, camera.position.z);
 
     Matrix4f* wvp = get_wvp_transform();
-
     shader_set_mat4(sky_program, "wvp", wvp);
 
     glBindVertexArray(sky_vao);
-
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, texture_cube);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,sky_ibo);
     glDrawElements(GL_TRIANGLES, sizeof(sky_indices), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
-
     glDepthFunc(GL_LESS);
 }
