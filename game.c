@@ -21,6 +21,7 @@
 #include "mesh.h"
 #include "sky.h"
 #include "terrain.h"
+#include "net.h"
 
 // =========================
 // Global Vars
@@ -32,6 +33,8 @@ GLuint vbo,ibo;
 // Function Prototypes
 // =========================
 
+void start_server();
+void start_client();
 void init();
 void deinit();
 void simulate();
@@ -41,12 +44,45 @@ void render();
 // Main Loop
 // =========================
 
-int main()
+int main(int argc, char* argv[])
+{
+    bool is_server = false;
+
+    if(argc > 1)
+    {
+        for(int i = 1; i < argc; ++i)
+        {
+            // --server
+            if(argv[i][0] == '-' && argv[i][1] == '-')
+                if(strncmp(argv[i]+2,"server",6) == 0)
+                    is_server = true;
+        }
+    }
+
+    if(is_server)
+        start_server();
+    else
+        start_client();
+
+    return 0;
+}
+
+// =========================
+// Functions
+// =========================
+
+void start_server()
+{
+    net_server_start();
+}
+
+void start_client()
 {
     init();
 
     double lasttime = glfwGetTime();
 
+    // main game loop
     for(;;)
     {
         glfwPollEvents();
@@ -65,12 +101,7 @@ int main()
 
     deinit();
 
-    return 0;
 }
-
-// =========================
-// Functions
-// =========================
 
 void init()
 {
@@ -82,6 +113,8 @@ void init()
         fprintf(stderr,"Failed to initialize window!\n");
         exit(1);
     }
+
+    net_client_init();
 
     printf("GL version: %s\n",glGetString(GL_VERSION));
     
@@ -126,8 +159,11 @@ void deinit()
     glDeleteBuffers(1, &vbo);
 
     shader_deinit();
+    net_client_deinit();
     window_deinit();
 }
+
+Packet pkt_prior = {0};
 
 void simulate()
 {
@@ -143,6 +179,18 @@ void simulate()
 
     shader_set_float(program, "dl.diffuse_intensity", light.diffuse_intensity);
     shader_set_vec3(program, "dl.direction", dir.x, dir.y, dir.z);
+
+    Packet pkt = {
+        camera.position.x,
+        camera.position.y,
+        camera.position.z
+    };
+
+    if(memcmp(&pkt,&pkt_prior,sizeof(Packet)) != 0)
+    {
+        memcpy(&pkt_prior,&pkt,sizeof(Packet));
+        net_client_send(&pkt);
+    }
 }
 
 void render()

@@ -12,5 +12,6 @@ gcc game.c \
     sky.c \
     lighting.c \
     terrain.c \
+    net.c \
     -lglfw -lGLU -lGLEW -lGL -lm \
     -o adventure
