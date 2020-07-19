@@ -29,12 +29,14 @@
 
 GLuint vbo,ibo;
 
+bool is_client = false;
+
 // =========================
 // Function Prototypes
 // =========================
 
 void start_server();
-void start_client();
+void start_game();
 void init();
 void deinit();
 void simulate();
@@ -56,13 +58,15 @@ int main(int argc, char* argv[])
             if(argv[i][0] == '-' && argv[i][1] == '-')
                 if(strncmp(argv[i]+2,"server",6) == 0)
                     is_server = true;
+                else if(strncmp(argv[i]+2,"client",6) == 0)
+                    is_client = true;
         }
     }
 
     if(is_server)
         start_server();
     else
-        start_client();
+        start_game();
 
     return 0;
 }
@@ -76,7 +80,7 @@ void start_server()
     net_server_start();
 }
 
-void start_client()
+void start_game()
 {
     init();
 
@@ -114,7 +118,8 @@ void init()
         exit(1);
     }
 
-    net_client_init();
+    if(is_client)
+        net_client_init();
 
     printf("GL version: %s\n",glGetString(GL_VERSION));
     
@@ -159,11 +164,12 @@ void deinit()
     glDeleteBuffers(1, &vbo);
 
     shader_deinit();
-    net_client_deinit();
+    if(is_client)
+        net_client_deinit();
     window_deinit();
 }
 
-Packet pkt_prior = {0};
+ClientPacket pkt_prior = {0};
 
 void simulate()
 {
@@ -180,17 +186,26 @@ void simulate()
     shader_set_float(program, "dl.diffuse_intensity", light.diffuse_intensity);
     shader_set_vec3(program, "dl.direction", dir.x, dir.y, dir.z);
 
-    Packet pkt = {
-        camera.position.x,
-        camera.position.y,
-        camera.position.z
-    };
-
-    if(memcmp(&pkt,&pkt_prior,sizeof(Packet)) != 0)
+    if(is_client)
     {
-        memcpy(&pkt_prior,&pkt,sizeof(Packet));
-        net_client_send(&pkt);
+        ClientPacket pkt = {
+            {
+            camera.position.x,
+            camera.position.y,
+            camera.position.z
+            }
+        };
+
+        if(memcmp(&pkt,&pkt_prior,sizeof(ClientPacket)) != 0)
+        {
+            memcpy(&pkt_prior,&pkt,sizeof(ClientPacket));
+            net_client_send(&pkt);
+        }
     }
+
+    //ServerPacket srvpkt = {0};
+    //net_client_recv(&srvpkt);
+    //printf("Num Clients: %d.\n",srvpkt.num_clients);
 }
 
 void render()
