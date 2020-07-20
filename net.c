@@ -7,6 +7,7 @@
 #include <arpa/inet.h> 
 #include <netinet/in.h> 
 #include <sys/time.h>
+#include <sys/ioctl.h>
 #include <errno.h> 
 
 #include "util.h"
@@ -43,6 +44,8 @@ int net_server_start()
         return 1;
     } 
 
+    printf("TCP Socket created.\n");
+
     int optval = 1;
     if(setsockopt(server_info.tcp_socket, SOL_SOCKET, SO_REUSEADDR,(const void *)&optval , sizeof(int)))
     {
@@ -61,12 +64,16 @@ int net_server_start()
         return 1;
     }
 
+    printf("Socket bind success.\n");
+
 	//try to specify maximum of 3 pending connections for the master socket  
     if (listen(server_info.tcp_socket, 3) < 0)
     {
         perror("listen");
 		return 1;
     }
+
+    printf("Server started.\n");
 
     fd_set readfds;
 
@@ -125,11 +132,11 @@ int net_server_start()
             );
 
             //send new connection greeting message  
+#if 0
 			const char* message = "Welcome!";
             if(send(new_socket, message, strlen(message), 0) != strlen(message) )
-            {
                 perror("send");
-            }
+#endif
 
             //add new socket to array of sockets  
             for (int i = 0; i < MAX_CLIENTS; ++i)
@@ -177,34 +184,29 @@ int net_server_start()
 					ClientPacket* pkt = (ClientPacket*)server_info.buffer;
 					printf("%d: P %f %f %f\n",sd, pkt->position.x,pkt->position.y,pkt->position.z, valread);
 
+                    server_info.clients[i].position.x = pkt->position.x;
+                    server_info.clients[i].position.y = pkt->position.y;
+                    server_info.clients[i].position.z = pkt->position.z;
+
                     // broadcast new data to other clients
                     if(server_info.num_clients > 1)
                     {
                         ServerPacket srvpkt = {0};
 
-                        srvpkt.num_clients = server_info.num_clients;
-                        int client_count = 0;
-                        for(int i = 0; i < MAX_CLIENTS; ++i)
+                        srvpkt.num_clients = 1;
+                        srvpkt.client_positions[0].x = pkt->position.x;
+                        srvpkt.client_positions[0].y = pkt->position.y;
+                        srvpkt.client_positions[0].z = pkt->position.z;
+
+                        for(int j = 0; j < MAX_CLIENTS; ++j)
                         {
-                            if(server_info.clients[i].socket == 0)
-                                continue;
-                            
-                            srvpkt.client_positions[client_count].x = server_info.clients[i].position.x;
-                            srvpkt.client_positions[client_count].y = server_info.clients[i].position.y;
-                            srvpkt.client_positions[client_count].z = server_info.clients[i].position.z;
-
-                            client_count++;
-                        }
-
-                        for(int i = 0; i < MAX_CLIENTS; ++i)
-                        {
-                            if(server_info.clients[i].socket == 0)
+                            if(server_info.clients[j].socket == 0)
                                 continue;
 
-                            if(server_info.clients[i].socket == sd)
+                            if(server_info.clients[j].socket == sd)
                                 continue;
 
-                            int res = send(server_info.clients[i].socket, &srvpkt ,sizeof(ServerPacket), 0);
+                            int res = send(server_info.clients[j].socket, &srvpkt ,sizeof(ServerPacket), 0);
                             if(res < 0)
                                 perror("Send failed.\n");
                         }
@@ -213,30 +215,6 @@ int net_server_start()
             }
         }
 	}
-
-#if 0
-      
-    Packet pkt = {0};
-
-    for(;;)
-    {
-        int id = -1;
-        int n = net_server_recv(&pkt, &id);
-
-        if(n > 0)
-        {
-            //printf("id: %d, pos: %f %f %f\n",id,pkt.x, pkt.y, pkt.z);
-            // send position update to all other clients
-            for(int i = 0; i < server_info.num_clients; ++i)
-            {
-                if(i == id)
-                    continue;
-
-                net_server_send(&pkt,i);
-            }
-        }
-    }
-#endif
 
     return 0; 
 }
@@ -256,7 +234,7 @@ void net_client_init()
         perror("Socket creation failed"); 
         return;
     } 
-  
+
     memset(&client_info.servaddr, 0, sizeof(client_info.servaddr)); 
       
     // Filling server information 
@@ -268,10 +246,12 @@ void net_client_init()
     if (connect(client_info.sockfd, (struct sockaddr *)&client_info.servaddr , sizeof(client_info.servaddr)) < 0)
     {
         perror("Connect error");
+        close(client_info.sockfd);
         return;
     }
     
-   printf("Connected.\n");
+    printf("Connected.\n");
+
 }
 
 void net_client_send(ClientPacket* pkt)
@@ -286,16 +266,37 @@ void net_client_send(ClientPacket* pkt)
 
 int net_client_recv(ServerPacket* pkt)
 {
-    int res = recv(client_info.sockfd, client_info.buffer, MAX_PACKET_SIZE, 0);
-    if( res < 0)
+    fd_set readfds;
+
+    //clear the socket set  
+    FD_ZERO(&readfds);
+    
+    //add client socket to set  
+    FD_SET(client_info.sockfd, &readfds);
+
+    int sd = client_info.sockfd;
+
+    struct timeval tv = {0};
+    int activity = select(sd + 1 , &readfds , NULL , NULL , &tv);
+    if ((activity < 0) && (errno!=EINTR))
     {
-		perror("recv failed");
+        printf("select error");
         return 0;
     }
 
-    memcpy(pkt,client_info.buffer,sizeof(ServerPacket));
+    int valread = 0;
+    if(FD_ISSET(sd , &readfds))
+    {
+        valread = read(sd, client_info.buffer, MAX_PACKET_SIZE);
+        if(valread > 0)
+            memcpy(pkt,client_info.buffer,sizeof(ServerPacket));
+    }
+    else
+    {
+        return 0;
+    }
 
-    return res;
+    return valread;
 }
 
 void net_client_deinit()

@@ -16,6 +16,7 @@ GLuint wvp_location;
 GLuint sampler;
 
 GLuint wireframe_location;
+GLuint camera_position_location;
 
 DirLightLocation dir_light_location;
 
@@ -38,6 +39,7 @@ void shader_load_all()
     dir_light_location.direction         = glGetUniformLocation(program, "dl.direction");
 
     wireframe_location = glGetUniformLocation(program,"wireframe");
+    camera_position_location = glGetUniformLocation(program,"camera_position");
 
     if(world_location                       == INVALID_UNIFORM_LOCATION ||
        sampler                              == INVALID_UNIFORM_LOCATION ||

@@ -9,11 +9,13 @@ uniform mat4 world;
 
 out vec2 tex_coord0;
 out vec3 normal0;
+out vec3 vertex_position;
 
 void main()
 {
-    gl_Position = wvp * vec4(position, 1.0);
+    vertex_position = position;
     tex_coord0 = tex_coord;
+
+    gl_Position = wvp * vec4(position, 1.0);
     normal0 = (world * vec4(normal, 0.0)).xyz;
-    //color = vec4(clamp(position, 0.0, 1.0), 1.0);
 };

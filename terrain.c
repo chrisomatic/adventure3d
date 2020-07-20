@@ -12,6 +12,7 @@
 #include "texture.h"
 #include "terrain.h"
 #include "shader.h"
+#include "camera.h"
 #include "transform.h"
 #include "mesh.h"
 
@@ -40,9 +41,8 @@ void terrain_render()
     shader_set_mat4(program, "world", world);
     shader_set_mat4(program, "wvp", wvp);
 
-    //glUniform3f(dir_light_location.color, light.color.x, light.color.y, light.color.z);
-    //glUniform1f(dir_light_location.ambient_intensity, light.ambient_intensity);
     glUniform1i(wireframe_location, show_wireframe);
+    glUniform3f(camera_position_location, camera.position.x,camera.position.y,camera.position.z);
 
     glBindVertexArray(terrain.vao);
     glEnableVertexAttribArray(0);

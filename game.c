@@ -31,6 +31,14 @@ GLuint vbo,ibo;
 
 bool is_client = false;
 
+typedef struct
+{
+    Vector3f position;
+    Vector3f target;
+} PlayerInfo;
+PlayerInfo player_info[MAX_CLIENTS] = {0};
+int num_other_players = 0;
+
 // =========================
 // Function Prototypes
 // =========================
@@ -127,6 +135,8 @@ void init()
     glFrontFace(GL_CW);
     glCullFace(GL_BACK);
     glEnable(GL_CULL_FACE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
@@ -201,11 +211,30 @@ void simulate()
             memcpy(&pkt_prior,&pkt,sizeof(ClientPacket));
             net_client_send(&pkt);
         }
+
+        // read from server
+        ServerPacket srvpkt = {0};
+        int res = net_client_recv(&srvpkt);
+        if(res > 0)
+        {
+            num_other_players = srvpkt.num_clients;
+
+            printf("Num Clients: %d.\n",srvpkt.num_clients);
+            for(int i = 0; i < srvpkt.num_clients; ++i)
+            {
+                player_info[i].position.x = srvpkt.client_positions[i].x;
+                player_info[i].position.y = srvpkt.client_positions[i].y;
+                player_info[i].position.z = srvpkt.client_positions[i].z;
+
+                printf("Client%d: P %f %f %f\n", i,
+                        srvpkt.client_positions[i].x,
+                        srvpkt.client_positions[i].y,
+                        srvpkt.client_positions[i].z
+                );
+            }
+        }
     }
 
-    //ServerPacket srvpkt = {0};
-    //net_client_recv(&srvpkt);
-    //printf("Num Clients: %d.\n",srvpkt.num_clients);
 }
 
 void render()
@@ -218,26 +247,26 @@ void render()
 
     terrain_render();
 
-    // object
-    world_set_scale(1.0f,1.0f,1.0f);
-    world_set_rotation(10*world.time,10*world.time,0.0f);
-    world_set_position(0.0f,10.0f*sinf(world.time),40.0f); //ABS(50.0f*sinf(world.time)));
-
-    _world = get_world_transform();
-    _wvp   = get_wvp_transform();
-
-    //shader_set_mat4(program, "world", _world);
-    //shader_set_mat4(program, "wvp", _wvp);
-
-    glUniformMatrix4fv(world_location,1,GL_TRUE,(const GLfloat*)_world);
-    glUniformMatrix4fv(wvp_location,1,GL_TRUE,(const GLfloat*)_wvp);
-
     glUniform3f(dir_light_location.color, light.color.x, light.color.y, light.color.z);
     glUniform1f(dir_light_location.ambient_intensity, light.ambient_intensity);
     glUniform3f(dir_light_location.direction, light.direction.x, light.direction.y, light.direction.z);
     glUniform1f(dir_light_location.diffuse_intensity, light.diffuse_intensity);
 
-    mesh_render(&obj);
+    // objects
+    for(int i = 0; i < num_other_players; ++i)
+    {
+        world_set_scale(5.0f,5.0f,5.0f);
+        world_set_rotation(0.0f,90.0f,0.0f);
+        world_set_position(-player_info[i].position.x,-player_info[i].position.y,-player_info[i].position.z);
+
+        _world = get_world_transform();
+        _wvp   = get_wvp_transform();
+
+        glUniformMatrix4fv(world_location,1,GL_TRUE,(const GLfloat*)_world);
+        glUniformMatrix4fv(wvp_location,1,GL_TRUE,(const GLfloat*)_wvp);
+
+        mesh_render(&obj);
+    }
 
     sky_render();
 

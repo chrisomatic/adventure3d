@@ -20,6 +20,7 @@ extern GLuint wvp_location;
 extern GLuint sampler;
 extern GLuint wireframe_location;
 extern DirLightLocation dir_light_location;
+extern GLuint camera_position_location;
 
 void shader_load_all();
 void shader_deinit();
