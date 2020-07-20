@@ -21,6 +21,8 @@ typedef struct
 {
     int socket;
     Vector3f position;
+    float angle_h;
+    float angle_v;
 } Client;
 
 static struct
@@ -187,6 +189,8 @@ int net_server_start()
                     server_info.clients[i].position.x = pkt->position.x;
                     server_info.clients[i].position.y = pkt->position.y;
                     server_info.clients[i].position.z = pkt->position.z;
+                    server_info.clients[i].angle_h = pkt->angle_h;
+                    server_info.clients[i].angle_v = pkt->angle_v;
 
                     // broadcast new data to other clients
                     if(server_info.num_clients > 1)
@@ -194,9 +198,11 @@ int net_server_start()
                         ServerPacket srvpkt = {0};
 
                         srvpkt.num_clients = 1;
-                        srvpkt.client_positions[0].x = pkt->position.x;
-                        srvpkt.client_positions[0].y = pkt->position.y;
-                        srvpkt.client_positions[0].z = pkt->position.z;
+                        srvpkt.clients[0].position.x = pkt->position.x;
+                        srvpkt.clients[0].position.y = pkt->position.y;
+                        srvpkt.clients[0].position.z = pkt->position.z;
+                        srvpkt.clients[0].angle_h    = pkt->angle_h;
+                        srvpkt.clients[0].angle_v    = pkt->angle_v;
 
                         for(int j = 0; j < MAX_CLIENTS; ++j)
                         {

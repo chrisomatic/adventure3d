@@ -34,8 +34,10 @@ bool is_client = false;
 typedef struct
 {
     Vector3f position;
-    Vector3f target;
+    float angle_h;
+    float angle_v;
 } PlayerInfo;
+
 PlayerInfo player_info[MAX_CLIENTS] = {0};
 int num_other_players = 0;
 
@@ -200,10 +202,12 @@ void simulate()
     {
         ClientPacket pkt = {
             {
-            camera.position.x,
-            camera.position.y,
-            camera.position.z
-            }
+                camera.position.x,
+                camera.position.y,
+                camera.position.z
+            },
+            camera.angle_h,
+            camera.angle_v
         };
 
         if(memcmp(&pkt,&pkt_prior,sizeof(ClientPacket)) != 0)
@@ -222,14 +226,18 @@ void simulate()
             printf("Num Clients: %d.\n",srvpkt.num_clients);
             for(int i = 0; i < srvpkt.num_clients; ++i)
             {
-                player_info[i].position.x = srvpkt.client_positions[i].x;
-                player_info[i].position.y = srvpkt.client_positions[i].y;
-                player_info[i].position.z = srvpkt.client_positions[i].z;
+                player_info[i].position.x = srvpkt.clients[i].position.x;
+                player_info[i].position.y = srvpkt.clients[i].position.y;
+                player_info[i].position.z = srvpkt.clients[i].position.z;
+                player_info[i].angle_h    = srvpkt.clients[i].angle_h;
+                player_info[i].angle_v    = srvpkt.clients[i].angle_v;
 
-                printf("Client%d: P %f %f %f\n", i,
-                        srvpkt.client_positions[i].x,
-                        srvpkt.client_positions[i].y,
-                        srvpkt.client_positions[i].z
+                printf("Client%d: P %f %f %f R %f %f\n", i,
+                        srvpkt.clients[i].position.x,
+                        srvpkt.clients[i].position.y,
+                        srvpkt.clients[i].position.z,
+                        srvpkt.clients[i].angle_h,
+                        srvpkt.clients[i].angle_v
                 );
             }
         }
@@ -256,7 +264,7 @@ void render()
     for(int i = 0; i < num_other_players; ++i)
     {
         world_set_scale(5.0f,5.0f,5.0f);
-        world_set_rotation(0.0f,90.0f,0.0f);
+        world_set_rotation(-player_info[i].angle_v+90.0f,-player_info[i].angle_h+90.0f,0.0f);
         world_set_position(-player_info[i].position.x,-player_info[i].position.y,-player_info[i].position.z);
 
         _world = get_world_transform();

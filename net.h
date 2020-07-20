@@ -5,12 +5,14 @@
 typedef struct
 {
     Vector3f position;
+    float angle_h;
+    float angle_v;
 } ClientPacket;
 
 typedef struct
 {
     u8 num_clients;
-    Vector3f client_positions[MAX_CLIENTS];
+    ClientPacket clients[MAX_CLIENTS];
 } ServerPacket;
 
 int net_server_start();
