@@ -235,7 +235,6 @@ void simulate()
                 player_info[i].position.z = srvpkt.clients[i].position.z;
                 player_info[i].angle_h    = srvpkt.clients[i].angle_h;
                 player_info[i].angle_v    = srvpkt.clients[i].angle_v;
-
                 
                 printf("Client%d: P %f %f %f R %f %f\n", i,
                         srvpkt.clients[i].position.x,

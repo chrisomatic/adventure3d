@@ -59,8 +59,7 @@ static void server_send_world_state(int socket)
     }
 
 
-    int size = sizeof(PacketType)+sizeof(u8)+(sizeof(ClientPacket)*srvpkt.num_clients);
-    printf("sending %d size\n", size);
+    int size = sizeof(PacketType)+sizeof(u8)+(sizeof(ClientPacket)*srvpkt.num_clients) + 4;
     int res = send(socket, &srvpkt ,size, 0);
     if(res < 0)
         perror("Send failed.\n");
@@ -225,7 +224,7 @@ int net_server_start()
                 else
                 {
 					ClientPacket* pkt = (ClientPacket*)server_info.buffer;
-					printf("%d: P %f %f %f\n",sd, pkt->position.x,pkt->position.y,pkt->position.z, valread);
+					printf("%d: P %f %f %f R %f %f\n",sd, pkt->position.x,pkt->position.y,pkt->position.z, pkt->angle_h, pkt->angle_v);
 
                     server_info.clients[i].position.x = pkt->position.x;
                     server_info.clients[i].position.y = pkt->position.y;
@@ -327,12 +326,11 @@ int net_client_recv(ServerPacket* pkt)
         if(valread > 0)
         {
             u8* bp = client_info.buffer;
+
             if(bp[0] == PACKET_TYPE_WORLD_STATE)
             {
                 u8 num_clients = *(bp + sizeof(PacketType));
-                int size = sizeof(PacketType)+sizeof(u8)+(sizeof(ClientPacket)*num_clients);
-                printf("receiving %d size\n", size);
-                memcpy(pkt,client_info.buffer,size);
+                memcpy(pkt,client_info.buffer,valread);
             }
 
         }
