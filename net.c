@@ -89,6 +89,7 @@ int net_server_start()
       
     server_info.servaddr.sin_family      = AF_INET; // IPv4
     server_info.servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    //server_info.servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
     server_info.servaddr.sin_port        = htons(PORT);
       
     // Bind the socket with the server address 
@@ -273,9 +274,10 @@ void net_client_init()
     memset(&client_info.servaddr, 0, sizeof(client_info.servaddr)); 
       
     // Filling server information 
-    client_info.servaddr.sin_family = AF_INET; 
+    client_info.servaddr.sin_family = AF_INET;
+    //client_info.servaddr.sin_addr.s_addr = INADDR_ANY;
+    client_info.servaddr.sin_addr.s_addr = inet_addr("66.228.43.91");
     client_info.servaddr.sin_port = htons(PORT); 
-    client_info.servaddr.sin_addr.s_addr = INADDR_ANY; 
 
     // connect
     if (connect(client_info.sockfd, (struct sockaddr *)&client_info.servaddr , sizeof(client_info.servaddr)) < 0)
