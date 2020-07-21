@@ -14,7 +14,7 @@
 #include "math3d.h"
 #include "net.h"
   
-#define MAX_PACKET_SIZE 1024 
+#define MAX_PACKET_SIZE 4096 
 #define PORT    8888 
 
 typedef struct
@@ -29,10 +29,43 @@ static struct
 {
     int tcp_socket;
     struct sockaddr_in servaddr;
-    Client clients[MAX_CLIENTS];
     int num_clients;
+    Client clients[MAX_CLIENTS];
     u8 buffer[MAX_PACKET_SIZE];
 } server_info;
+
+static void server_send_world_state(int socket)
+{
+    ServerPacket srvpkt = {0};
+    srvpkt.type = PACKET_TYPE_WORLD_STATE;
+    srvpkt.num_clients = server_info.num_clients -1; // we don't want to send a client their own data
+
+    int client_count = 0;
+    for(int k = 0; k < MAX_CLIENTS; ++k)
+    {
+        if(server_info.clients[k].socket == 0) // ignore empty clients
+            continue;
+
+        if(server_info.clients[k].socket == socket) // ignore client we are sending to
+            continue;
+
+        srvpkt.clients[client_count].position.x = server_info.clients[k].position.x;
+        srvpkt.clients[client_count].position.y = server_info.clients[k].position.y;
+        srvpkt.clients[client_count].position.z = server_info.clients[k].position.z;
+        srvpkt.clients[client_count].angle_h    = server_info.clients[k].angle_h;
+        srvpkt.clients[client_count].angle_v    = server_info.clients[k].angle_v;
+
+        client_count++;
+    }
+
+
+    int size = sizeof(PacketType)+sizeof(u8)+(sizeof(ClientPacket)*srvpkt.num_clients);
+    printf("sending %d size\n", size);
+    int res = send(socket, &srvpkt ,size, 0);
+    if(res < 0)
+        perror("Send failed.\n");
+
+}
 
 int net_server_start()
 {
@@ -107,7 +140,7 @@ int net_server_start()
 
         //wait for an activity on one of the sockets , timeout is NULL ,  
         //so wait indefinitely  
-        int activity = select( max_sd + 1 , &readfds , NULL , NULL , NULL);
+        int activity = select(max_sd + 1 , &readfds , NULL , NULL , NULL);
 
         if ((activity < 0) && (errno!=EINTR))
             printf("select error");
@@ -133,13 +166,6 @@ int net_server_start()
                     server_info.num_clients
             );
 
-            //send new connection greeting message  
-#if 0
-			const char* message = "Welcome!";
-            if(send(new_socket, message, strlen(message), 0) != strlen(message) )
-                perror("send");
-#endif
-
             //add new socket to array of sockets  
             for (int i = 0; i < MAX_CLIENTS; ++i)
             {
@@ -151,6 +177,12 @@ int net_server_start()
 
                     break;
                 }
+            }
+
+            if(server_info.num_clients > 1)
+            {
+                // send world state to new client
+                server_send_world_state(new_socket);
             }
         }
 
@@ -180,6 +212,15 @@ int net_server_start()
                     //Close the socket and mark as 0 in list for reuse  
                     close(sd);
                     server_info.clients[i].socket = 0;
+
+                    // broadcast data to other clients
+                    for(int j = 0; j < MAX_CLIENTS; ++j)
+                    {
+                        if(server_info.clients[j].socket == 0) // ignore empty clients
+                            continue;
+
+                        server_send_world_state(server_info.clients[j].socket);
+                    }
                 }
                 else
                 {
@@ -195,26 +236,15 @@ int net_server_start()
                     // broadcast new data to other clients
                     if(server_info.num_clients > 1)
                     {
-                        ServerPacket srvpkt = {0};
-
-                        srvpkt.num_clients = 1;
-                        srvpkt.clients[0].position.x = pkt->position.x;
-                        srvpkt.clients[0].position.y = pkt->position.y;
-                        srvpkt.clients[0].position.z = pkt->position.z;
-                        srvpkt.clients[0].angle_h    = pkt->angle_h;
-                        srvpkt.clients[0].angle_v    = pkt->angle_v;
-
                         for(int j = 0; j < MAX_CLIENTS; ++j)
                         {
-                            if(server_info.clients[j].socket == 0)
+                            if(server_info.clients[j].socket == 0) // ignore empty clients
                                 continue;
 
-                            if(server_info.clients[j].socket == sd)
+                            if(server_info.clients[j].socket == sd) // ignore client that sent update
                                 continue;
 
-                            int res = send(server_info.clients[j].socket, &srvpkt ,sizeof(ServerPacket), 0);
-                            if(res < 0)
-                                perror("Send failed.\n");
+                            server_send_world_state(server_info.clients[j].socket);
                         }
                     }
                 }
@@ -295,7 +325,17 @@ int net_client_recv(ServerPacket* pkt)
     {
         valread = read(sd, client_info.buffer, MAX_PACKET_SIZE);
         if(valread > 0)
-            memcpy(pkt,client_info.buffer,sizeof(ServerPacket));
+        {
+            u8* bp = client_info.buffer;
+            if(bp[0] == PACKET_TYPE_WORLD_STATE)
+            {
+                u8 num_clients = *(bp + sizeof(PacketType));
+                int size = sizeof(PacketType)+sizeof(u8)+(sizeof(ClientPacket)*num_clients);
+                printf("receiving %d size\n", size);
+                memcpy(pkt,client_info.buffer,size);
+            }
+
+        }
     }
     else
     {

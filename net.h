@@ -9,8 +9,16 @@ typedef struct
     float angle_v;
 } ClientPacket;
 
+typedef enum
+{
+    PACKET_TYPE_NONE,
+    PACKET_TYPE_WORLD_STATE,
+    PACKET_TYPE_MESSAGE,
+} PacketType;
+
 typedef struct
 {
+    PacketType type;
     u8 num_clients;
     ClientPacket clients[MAX_CLIENTS];
 } ServerPacket;

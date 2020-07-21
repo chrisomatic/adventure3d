@@ -64,10 +64,13 @@ int main(int argc, char* argv[])
     {
         for(int i = 1; i < argc; ++i)
         {
-            // --server
             if(argv[i][0] == '-' && argv[i][1] == '-')
+
+                // server
                 if(strncmp(argv[i]+2,"server",6) == 0)
                     is_server = true;
+
+                // client
                 else if(strncmp(argv[i]+2,"client",6) == 0)
                     is_client = true;
         }
@@ -224,6 +227,7 @@ void simulate()
             num_other_players = srvpkt.num_clients;
 
             printf("Num Clients: %d.\n",srvpkt.num_clients);
+
             for(int i = 0; i < srvpkt.num_clients; ++i)
             {
                 player_info[i].position.x = srvpkt.clients[i].position.x;
@@ -232,6 +236,7 @@ void simulate()
                 player_info[i].angle_h    = srvpkt.clients[i].angle_h;
                 player_info[i].angle_v    = srvpkt.clients[i].angle_v;
 
+                
                 printf("Client%d: P %f %f %f R %f %f\n", i,
                         srvpkt.clients[i].position.x,
                         srvpkt.clients[i].position.y,

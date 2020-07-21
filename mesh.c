@@ -151,7 +151,7 @@ void mesh_load_model(ModelFormat format, const char* file_path, Mesh* mesh)
 {
     u32 vertex_count = 0;
     Vector3f unique_vertices[2048] = {0};
-    u32 indices[2048] = {0};
+    u32 indices[4096] = {0};
     u32 index_count = 0;
 
     u32 matched_index = 0;
@@ -169,6 +169,7 @@ void mesh_load_model(ModelFormat format, const char* file_path, Mesh* mesh)
 
             for(int i = 0; i < stl.num_triangles; ++i)
             {
+                matched_index = 0;
                 if(is_vec3f_unique(unique_vertices,vertex_count,&stl.triangles[i].vertex1, &matched_index))
                 {
                     copy_v3f(&unique_vertices[vertex_count++],&stl.triangles[i].vertex1);
@@ -177,6 +178,7 @@ void mesh_load_model(ModelFormat format, const char* file_path, Mesh* mesh)
                 else
                     indices[index_count++] = matched_index;
 
+                matched_index = 0;
                 if(is_vec3f_unique(unique_vertices,vertex_count,&stl.triangles[i].vertex2, &matched_index))
                 {
                     copy_v3f(&unique_vertices[vertex_count++],&stl.triangles[i].vertex2);
@@ -185,6 +187,7 @@ void mesh_load_model(ModelFormat format, const char* file_path, Mesh* mesh)
                 else
                     indices[index_count++] = matched_index;
 
+                matched_index = 0;
                 if(is_vec3f_unique(unique_vertices,vertex_count,&stl.triangles[i].vertex3, &matched_index))
                 {
                     copy_v3f(&unique_vertices[vertex_count++],&stl.triangles[i].vertex3);
@@ -249,7 +252,6 @@ void mesh_render(Mesh* mesh)
     glDisableVertexAttribArray(2);
 
     texture_unbind();
-
 }
 
 static void build_object()
