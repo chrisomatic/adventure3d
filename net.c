@@ -44,7 +44,7 @@ static int net_client_get_id();
 static void server_send_client_index(int client_index)
 {
     int socket = server_info.clients[client_index].socket;
-    printf("Sending client_index to socket: %d\n");
+    printf("Sending client_index to socket: %d\n",socket);
 
     int res = send(socket, &client_index ,sizeof(int), 0);
     if(res < 0)
@@ -84,10 +84,11 @@ static void server_send_world_state(int client_index)
     if(res < 0)
         perror("Send failed.\n");
 #else
+    struct sockaddr_in addr = server_info.clients[client_index].client_addr;
 
     int len = sizeof(struct sockaddr_in);
     int res = sendto(server_info.udp_socket, &srvpkt, size, MSG_CONFIRM,
-              (const struct sockaddr *)&server_info.clients[client_index].client_addr,(socklen_t)len);
+              (const struct sockaddr *)&addr,(socklen_t)len);
 
     if(res < 0)
         perror("Send failed.\n");
@@ -224,17 +225,22 @@ int net_server_start()
 
                 server_info.num_clients++;
 
+                int addr_len = sizeof(struct sockaddr_in);
+                getpeername(new_socket, (struct sockaddr*)&server_info.clients[available_index].client_addr,(socklen_t*)&addr_len);
+
+                struct sockaddr_in* addr = &server_info.clients[available_index].client_addr;
+
                 //inform user of socket number - used in send and receive commands  
                 printf("Client connected, fd: %d, ip: %s, port: %d. Num Clients: %d\n",
                         new_socket,
-                        inet_ntoa(server_info.clients[available_index].client_addr.sin_addr),
-                        ntohs(server_info.clients[available_index].client_addr.sin_port),
+                        inet_ntoa(addr->sin_addr),
+                        ntohs(addr->sin_port),
                         server_info.num_clients
                 );
 
                 server_info.clients[available_index].socket = new_socket;
                 printf("Adding to list of sockets as %d\n" , available_index);
-
+                
                 // send client index to client
                 server_send_client_index(available_index);
 
@@ -267,6 +273,8 @@ int net_server_start()
                 server_info.clients[client_index].angle_h = pkt->angle_h;
                 server_info.clients[client_index].angle_v = pkt->angle_v;
 
+                int size = sizeof(struct sockaddr_in);
+
                 memcpy(&server_info.clients[client_index].client_addr,&temp,len);
 
                 // broadcast new data to other clients
@@ -277,8 +285,8 @@ int net_server_start()
                         if(server_info.clients[j].socket == 0) // ignore empty clients
                             continue;
 
-                        if(j == client_index) // ignore client that sent update
-                            continue;
+                        //if(j == client_index) // ignore client that sent update
+                        //    continue;
 
                         server_send_world_state(j);
                     }
@@ -286,9 +294,8 @@ int net_server_start()
             }
         }
 
-#if 0
+#if 1
 
-        //else its some IO operation on some other socket 
         for (int i = 0; i < MAX_CLIENTS; ++i)
         {
             int sd = server_info.clients[i].socket;
@@ -322,7 +329,7 @@ int net_server_start()
                         if(server_info.clients[j].socket == 0) // ignore empty clients
                             continue;
 
-                        server_send_world_state(server_info.clients[j].socket);
+                        server_send_world_state(j);
                     }
                 }
             }
