@@ -4,6 +4,7 @@
 
 typedef struct
 {
+    u8 client_id;
     Vector3f position;
     float angle_h;
     float angle_v;
@@ -23,9 +24,11 @@ typedef struct
     ClientPacket clients[MAX_CLIENTS];
 } ServerPacket;
 
+extern char server_ip_address[16];
+
 int net_server_start();
 
-void net_client_init();
+int net_client_init();
 void net_client_send(ClientPacket* pkt);
-int  net_client_recv(ServerPacket* pkt);
+int net_client_recv(ServerPacket* pkt);
 void net_client_deinit();

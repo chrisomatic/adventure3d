@@ -29,7 +29,9 @@
 
 GLuint vbo,ibo;
 
+bool client_connected = false;
 bool is_client = false;
+int client_id = -1;
 
 typedef struct
 {
@@ -65,7 +67,7 @@ int main(int argc, char* argv[])
         for(int i = 1; i < argc; ++i)
         {
             if(argv[i][0] == '-' && argv[i][1] == '-')
-
+            {
                 // server
                 if(strncmp(argv[i]+2,"server",6) == 0)
                     is_server = true;
@@ -73,6 +75,11 @@ int main(int argc, char* argv[])
                 // client
                 else if(strncmp(argv[i]+2,"client",6) == 0)
                     is_client = true;
+            }
+            else
+            {
+                strncpy(server_ip_address, argv[i], strlen(argv[i]));
+            }
         }
     }
 
@@ -132,7 +139,12 @@ void init()
     }
 
     if(is_client)
-        net_client_init();
+    {
+        client_id = net_client_init();
+
+        if(client_id < 0)
+            printf("Failed to connect to server.\n");
+    }
 
     printf("GL version: %s\n",glGetString(GL_VERSION));
     
@@ -201,14 +213,15 @@ void simulate()
     shader_set_float(program, "dl.diffuse_intensity", light.diffuse_intensity);
     shader_set_vec3(program, "dl.direction", dir.x, dir.y, dir.z);
 
-    if(is_client)
+    if(is_client && client_id >= 0)
     {
         ClientPacket pkt = {
+            client_id,
             {
                 camera.position.x,
                 camera.position.y,
                 camera.position.z
-            },
+            }, // position
             camera.angle_h,
             camera.angle_v
         };
@@ -222,6 +235,7 @@ void simulate()
         // read from server
         ServerPacket srvpkt = {0};
         int res = net_client_recv(&srvpkt);
+
         if(res > 0)
         {
             num_other_players = srvpkt.num_clients;
@@ -246,7 +260,6 @@ void simulate()
             }
         }
     }
-
 }
 
 void render()

@@ -8,6 +8,7 @@
 #include <netinet/in.h> 
 #include <sys/time.h>
 #include <sys/ioctl.h>
+#include <stdbool.h>
 #include <errno.h> 
 
 #include "util.h"
@@ -17,9 +18,12 @@
 #define MAX_PACKET_SIZE 4096 
 #define PORT    8888 
 
+char server_ip_address[16] = {0};
+
 typedef struct
 {
     int socket;
+    struct sockaddr_in client_addr;
     Vector3f position;
     float angle_h;
     float angle_v;
@@ -28,13 +32,28 @@ typedef struct
 static struct
 {
     int tcp_socket;
+    int udp_socket;
     struct sockaddr_in servaddr;
     int num_clients;
     Client clients[MAX_CLIENTS];
     u8 buffer[MAX_PACKET_SIZE];
 } server_info;
 
-static void server_send_world_state(int socket)
+static int net_client_get_id();
+
+static void server_send_client_index(int client_index)
+{
+    int socket = server_info.clients[client_index].socket;
+    printf("Sending client_index to socket: %d\n");
+
+    int res = send(socket, &client_index ,sizeof(int), 0);
+    if(res < 0)
+        perror("Send failed.\n");
+    else
+        printf("Sent.\n");
+}
+
+static void server_send_world_state(int client_index)
 {
     ServerPacket srvpkt = {0};
     srvpkt.type = PACKET_TYPE_WORLD_STATE;
@@ -46,7 +65,7 @@ static void server_send_world_state(int socket)
         if(server_info.clients[k].socket == 0) // ignore empty clients
             continue;
 
-        if(server_info.clients[k].socket == socket) // ignore client we are sending to
+        if(server_info.clients[k].socket == server_info.clients[client_index].socket) // ignore client we are sending to
             continue;
 
         srvpkt.clients[client_count].position.x = server_info.clients[k].position.x;
@@ -58,11 +77,21 @@ static void server_send_world_state(int socket)
         client_count++;
     }
 
-
     int size = sizeof(PacketType)+sizeof(u8)+(sizeof(ClientPacket)*srvpkt.num_clients) + 4;
-    int res = send(socket, &srvpkt ,size, 0);
+
+#if 0
+    int res = send(server_info.clients[client_index].socket, &srvpkt ,size, 0);
     if(res < 0)
         perror("Send failed.\n");
+#else
+
+    int len = sizeof(struct sockaddr_in);
+    int res = sendto(server_info.udp_socket, &srvpkt, size, MSG_CONFIRM,
+              (const struct sockaddr *)&server_info.clients[client_index].client_addr,(socklen_t)len);
+
+    if(res < 0)
+        perror("Send failed.\n");
+#endif
 
 }
 
@@ -74,11 +103,20 @@ int net_server_start()
     server_info.tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (server_info.tcp_socket < 0)
     {
-        perror("Socket creation failed\n"); 
+        perror("TCP Socket creation failed\n"); 
         return 1;
     } 
 
     printf("TCP Socket created.\n");
+
+    server_info.udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
+    if (server_info.udp_socket < 0)
+    {
+        perror("UDP Socket creation failed\n"); 
+        return 1;
+    } 
+
+    printf("UDP Socket created.\n");
 
     int optval = 1;
     if(setsockopt(server_info.tcp_socket, SOL_SOCKET, SO_REUSEADDR,(const void *)&optval , sizeof(int)))
@@ -99,7 +137,15 @@ int net_server_start()
         return 1;
     }
 
-    printf("Socket bind success.\n");
+    printf("TCP Socket bind success.\n");
+    
+    if (bind(server_info.udp_socket, (const struct sockaddr *)&server_info.servaddr,sizeof(server_info.servaddr)) < 0)
+    {
+        perror("Bind failed"); 
+        return 1;
+    }
+
+    printf("UDP Socket bind success.\n");
 
 	//try to specify maximum of 3 pending connections for the master socket  
     if (listen(server_info.tcp_socket, 3) < 0)
@@ -112,7 +158,7 @@ int net_server_start()
 
     fd_set readfds;
 
-	int addrlen = sizeof(server_info.servaddr);
+	int addr_len = sizeof(struct sockaddr_in);
 
 	for(;;)
 	{
@@ -121,10 +167,12 @@ int net_server_start()
         
         //add master socket to set  
         FD_SET(server_info.tcp_socket, &readfds);
+        FD_SET(server_info.udp_socket, &readfds);
+
         int max_sd = server_info.tcp_socket;
 
         //add child sockets to set  
-        for (int i = 0 ; i < MAX_CLIENTS ; ++i)
+        for (int i = 0; i < MAX_CLIENTS; ++i)
         {
             //socket descriptor  
             int sd = server_info.clients[i].socket;
@@ -145,46 +193,100 @@ int net_server_start()
         if ((activity < 0) && (errno!=EINTR))
             printf("select error");
 
-        //If something happened on the master socket ,  
+        //If something happened on the server TCP socket,  
         //then its an incoming connection  
         if (FD_ISSET(server_info.tcp_socket, &readfds))
         {
-			int new_socket = accept(server_info.tcp_socket,(struct sockaddr *)&server_info.servaddr, (socklen_t*)&addrlen);
-            if (new_socket < 0)
-            {
-                perror("accept");
-                return 1;
-            }
-
-            server_info.num_clients++;
-
-            //inform user of socket number - used in send and receive commands  
-            printf("Client connected, fd: %d, ip: %s, port: %d. Num Clients: %d\n",
-					new_socket,
-					inet_ntoa(server_info.servaddr.sin_addr),
-                    ntohs(server_info.servaddr.sin_port),
-                    server_info.num_clients
-            );
-
-            //add new socket to array of sockets  
+            // get available client index
+            int available_index = -1;
             for (int i = 0; i < MAX_CLIENTS; ++i)
             {
                 //if position is empty  
                 if( server_info.clients[i].socket == 0 )
                 {
-                    server_info.clients[i].socket = new_socket;
-                    printf("Adding to list of sockets as %d\n" , i);
-
+                    available_index = i;
                     break;
                 }
             }
 
-            if(server_info.num_clients > 1)
+            if(available_index == -1)
             {
-                // send world state to new client
-                server_send_world_state(new_socket);
+                printf("Client connection rejected. Server is full. Num Clients: %d\n",server_info.num_clients);
+            }
+            else 
+            {
+                int new_socket = accept(server_info.tcp_socket,(struct sockaddr *)&server_info.clients[available_index].client_addr, (socklen_t*)&addr_len);
+                if (new_socket < 0)
+                {
+                    perror("accept");
+                    return 1;
+                }
+
+                server_info.num_clients++;
+
+                //inform user of socket number - used in send and receive commands  
+                printf("Client connected, fd: %d, ip: %s, port: %d. Num Clients: %d\n",
+                        new_socket,
+                        inet_ntoa(server_info.clients[available_index].client_addr.sin_addr),
+                        ntohs(server_info.clients[available_index].client_addr.sin_port),
+                        server_info.num_clients
+                );
+
+                server_info.clients[available_index].socket = new_socket;
+                printf("Adding to list of sockets as %d\n" , available_index);
+
+                // send client index to client
+                server_send_client_index(available_index);
+
+                if(server_info.num_clients > 1)
+                {
+                    // send world state to new client
+                    server_send_world_state(available_index);
+                }
             }
         }
+
+        if (FD_ISSET(server_info.udp_socket, &readfds))
+        {
+            struct sockaddr_in temp = {0};
+            int len = sizeof(temp);
+            int valread = recvfrom(server_info.udp_socket, server_info.buffer, MAX_PACKET_SIZE,
+                          MSG_WAITALL, (struct sockaddr *)&temp, &len);
+
+            if (valread > 0)
+            {
+                ClientPacket* pkt = (ClientPacket*)server_info.buffer;
+
+                printf("%d: P %f %f %f R %f %f\n",pkt->client_id, pkt->position.x,pkt->position.y,pkt->position.z, pkt->angle_h, pkt->angle_v);
+
+                u8 client_index = pkt->client_id;
+
+                server_info.clients[client_index].position.x = pkt->position.x;
+                server_info.clients[client_index].position.y = pkt->position.y;
+                server_info.clients[client_index].position.z = pkt->position.z;
+                server_info.clients[client_index].angle_h = pkt->angle_h;
+                server_info.clients[client_index].angle_v = pkt->angle_v;
+
+                memcpy(&server_info.clients[client_index].client_addr,&temp,len);
+
+                // broadcast new data to other clients
+                if(server_info.num_clients > 1)
+                {
+                    for(int j = 0; j < MAX_CLIENTS; ++j)
+                    {
+                        if(server_info.clients[j].socket == 0) // ignore empty clients
+                            continue;
+
+                        if(j == client_index) // ignore client that sent update
+                            continue;
+
+                        server_send_world_state(j);
+                    }
+                }
+            }
+        }
+
+#if 0
 
         //else its some IO operation on some other socket 
         for (int i = 0; i < MAX_CLIENTS; ++i)
@@ -193,19 +295,20 @@ int net_server_start()
 
             if (FD_ISSET(sd , &readfds))
             {
-                //Check if it was for closing , and also read the  
-                //incoming message  
-				int valread = read(sd, server_info.buffer, MAX_PACKET_SIZE);
+                // Check if it was for closing , and also read the  
+                // incoming message  
+                int valread = read(sd, server_info.buffer, MAX_PACKET_SIZE);
 
                 if (valread == 0)
                 {
-                    //Somebody disconnected , get his details and print  
-                    getpeername(sd , (struct sockaddr*)&server_info.servaddr,(socklen_t*)&addrlen);
+                    //Somebody disconnected , get their details and print  
+                    struct sockaddr_in addr = {0};
+                    getpeername(sd , (struct sockaddr*)&addr,(socklen_t*)&addr_len);
                     server_info.num_clients--;
 
                     printf("Client disconnected, ip: %s, port: %d. Num Clients: %d\n",
-                          inet_ntoa(server_info.servaddr.sin_addr),
-						  ntohs(server_info.servaddr.sin_port),
+                          inet_ntoa(addr.sin_addr),
+						  ntohs(addr.sin_port),
                           server_info.num_clients
                     );
 
@@ -222,34 +325,9 @@ int net_server_start()
                         server_send_world_state(server_info.clients[j].socket);
                     }
                 }
-                else
-                {
-					ClientPacket* pkt = (ClientPacket*)server_info.buffer;
-					printf("%d: P %f %f %f R %f %f\n",sd, pkt->position.x,pkt->position.y,pkt->position.z, pkt->angle_h, pkt->angle_v);
-
-                    server_info.clients[i].position.x = pkt->position.x;
-                    server_info.clients[i].position.y = pkt->position.y;
-                    server_info.clients[i].position.z = pkt->position.z;
-                    server_info.clients[i].angle_h = pkt->angle_h;
-                    server_info.clients[i].angle_v = pkt->angle_v;
-
-                    // broadcast new data to other clients
-                    if(server_info.num_clients > 1)
-                    {
-                        for(int j = 0; j < MAX_CLIENTS; ++j)
-                        {
-                            if(server_info.clients[j].socket == 0) // ignore empty clients
-                                continue;
-
-                            if(server_info.clients[j].socket == sd) // ignore client that sent update
-                                continue;
-
-                            server_send_world_state(server_info.clients[j].socket);
-                        }
-                    }
-                }
             }
         }
+#endif
 	}
 
     return 0; 
@@ -257,51 +335,78 @@ int net_server_start()
 
 static struct
 {
-    int sockfd;
+    int tcp_socket;
+    int udp_socket;
     struct sockaddr_in servaddr;
     u8 buffer[MAX_PACKET_SIZE];
 } client_info;
 
-void net_client_init()
+int net_client_init()
 {
-    // Creating socket file descriptor 
-    if ((client_info.sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    client_info.tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (client_info.tcp_socket < 0)
     {
-        perror("Socket creation failed"); 
-        return;
+        perror("TCP Socket creation failed"); 
+        return -1;
+    } 
+
+    client_info.udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
+    if (client_info.udp_socket < 0)
+    {
+        perror("UDP Socket creation failed"); 
+        return -1;
     } 
 
     memset(&client_info.servaddr, 0, sizeof(client_info.servaddr)); 
       
     // Filling server information 
     client_info.servaddr.sin_family = AF_INET;
-    //client_info.servaddr.sin_addr.s_addr = INADDR_ANY;
-    client_info.servaddr.sin_addr.s_addr = inet_addr("66.228.43.91");
+    client_info.servaddr.sin_addr.s_addr = inet_addr(server_ip_address);
     client_info.servaddr.sin_port = htons(PORT); 
 
     // connect
-    if (connect(client_info.sockfd, (struct sockaddr *)&client_info.servaddr , sizeof(client_info.servaddr)) < 0)
+    if (connect(client_info.tcp_socket, (struct sockaddr *)&client_info.servaddr , sizeof(client_info.servaddr)) < 0)
     {
         perror("Connect error");
-        close(client_info.sockfd);
-        return;
+        close(client_info.tcp_socket);
+        return -1;
     }
     
-    printf("Connected.\n");
+    printf("Connected to %s.\n", server_ip_address);
+    
+    // get client id from server
+    int client_id = net_client_get_id();
 
+    if(client_id >= 0)
+    {
+        // record client id
+        printf("Client id: %d\n",client_id);
+    }
+
+    return client_id;
 }
 
 void net_client_send(ClientPacket* pkt)
 {
+#if 0
     int res = send(client_info.sockfd, pkt ,sizeof(ClientPacket), 0);
     
     if(res < 0)
         perror("Send failed.\n");
+#else
+    int len = sizeof(client_info.servaddr);
+    int res = sendto(client_info.udp_socket, pkt, sizeof(ClientPacket), MSG_CONFIRM,
+              (const struct sockaddr *)&client_info.servaddr,(socklen_t)len);
+
+    if(res < 0)
+        perror("Send failed.\n");
+
+#endif
 
     return;
 }
 
-int net_client_recv(ServerPacket* pkt)
+static bool client_has_data_waiting(int socket, bool wait)
 {
     fd_set readfds;
 
@@ -309,22 +414,59 @@ int net_client_recv(ServerPacket* pkt)
     FD_ZERO(&readfds);
     
     //add client socket to set  
-    FD_SET(client_info.sockfd, &readfds);
+    FD_SET(socket, &readfds);
 
-    int sd = client_info.sockfd;
+    int activity;
 
-    struct timeval tv = {0};
-    int activity = select(sd + 1 , &readfds , NULL , NULL , &tv);
+    if(wait)
+    {
+        activity = select(socket + 1 , &readfds , NULL , NULL , NULL);
+    }
+    else
+    {
+        struct timeval tv = {0};
+        activity = select(socket + 1 , &readfds , NULL , NULL , &tv);
+    }
+
     if ((activity < 0) && (errno!=EINTR))
     {
         printf("select error");
-        return 0;
+        return false;
     }
 
-    int valread = 0;
-    if(FD_ISSET(sd , &readfds))
+    return FD_ISSET(socket , &readfds);
+}
+
+static int net_client_get_id()
+{
+    int id = -1;
+
+    bool has_data = client_has_data_waiting(client_info.tcp_socket,true);
+
+    if(has_data)
     {
-        valread = read(sd, client_info.buffer, MAX_PACKET_SIZE);
+        int valread = read(client_info.tcp_socket, client_info.buffer, MAX_PACKET_SIZE);
+
+        if(valread > 0)
+            id = client_info.buffer[0];
+    }
+
+    return id;
+}
+
+int net_client_recv(ServerPacket* pkt)
+{
+    bool has_data = client_has_data_waiting(client_info.udp_socket,false);
+
+    int valread = 0;
+
+    if(has_data)
+    {
+        int len = sizeof(client_info.servaddr);
+        valread = recvfrom(client_info.udp_socket, (void*)client_info.buffer, MAX_PACKET_SIZE,
+                  MSG_WAITALL, (struct sockaddr *) &client_info.servaddr,
+                  &len);
+
         if(valread > 0)
         {
             u8* bp = client_info.buffer;
@@ -347,5 +489,6 @@ int net_client_recv(ServerPacket* pkt)
 
 void net_client_deinit()
 {
-    close(client_info.sockfd); 
+    close(client_info.tcp_socket); 
+    close(client_info.udp_socket); 
 }
