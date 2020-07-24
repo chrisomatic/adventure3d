@@ -116,11 +116,18 @@ Matrix4f* get_world_transform()
 
 Matrix4f* get_wvp_transform()
 {
+    Vector3f camera_pos = {
+        camera.position.x + camera.player_offset.x,
+        camera.position.y + camera.player_offset.y,
+        camera.position.z + camera.player_offset.z
+    };
+
     get_scale_transform(&scale_trans);
     get_rotation_transform(&rotation_trans);
     get_translate_transform(&translate_trans, world.position);
     get_perspective_transform(&perspective_trans);
-    get_translate_transform(&camera_translate_trans, camera.position);
+
+    get_translate_transform(&camera_translate_trans, camera_pos);
     get_camera_transform(&camera_rotate_trans);
 
     memset(&wvp_trans,0,sizeof(Matrix4f));
@@ -137,8 +144,14 @@ Matrix4f* get_wvp_transform()
 
 Matrix4f* get_vp_transform()
 {
+    Vector3f camera_pos = {
+        camera.position.x + camera.player_offset.x,
+        camera.position.y + camera.player_offset.y,
+        camera.position.z + camera.player_offset.z
+    };
+
     get_perspective_transform(&perspective_trans);
-    get_translate_transform(&camera_translate_trans, camera.position);
+    get_translate_transform(&camera_translate_trans, camera_pos);
     get_camera_transform(&camera_rotate_trans);
 
     memset(&vp_trans,0,sizeof(Matrix4f));

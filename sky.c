@@ -65,7 +65,11 @@ void sky_render()
 
 	world_set_scale(1.0f, 1.0f, 1.0f);
 	world_set_rotation(0.0f, 0.0f, 180.0f);
-	world_set_position(-camera.position.x,-camera.position.y,-camera.position.z);
+	world_set_position(
+            -camera.position.x-camera.player_offset.x,
+            -camera.position.y-camera.player_offset.y,
+            -camera.position.z-camera.player_offset.z
+    );
 
     Matrix4f* wvp = get_wvp_transform();
     shader_set_mat4(sky_program, "wvp", wvp);

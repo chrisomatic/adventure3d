@@ -4,6 +4,14 @@ typedef struct
 {
     float height;
 
+    Vector3f velocity;
+    Vector3f position;
+    Vector3f target;
+    Vector3f up;
+
+    float angle_h;
+    float angle_v;
+
     bool key_w_down;
     bool key_s_down;
     bool key_a_down;
@@ -17,3 +25,4 @@ typedef struct
 extern Player player;
 
 void player_init();
+void player_update();

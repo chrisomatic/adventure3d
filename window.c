@@ -135,11 +135,24 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
                 break;
             case GLFW_KEY_M:
                 // toggle camera mode
-                if(camera.mode == CAMERA_MODE_FREEFORM)
-                    camera.mode = CAMERA_MODE_LOCKED_TO_PLAYER;
+                if(camera.mode == CAMERA_MODE_FREE)
+                {
+                    camera.mode = CAMERA_MODE_FOLLOW_PLAYER;
+                    camera_move_to_player();
+                }
                 else
-                    camera.mode = CAMERA_MODE_FREEFORM;
+                    camera.mode = CAMERA_MODE_FREE;
+
                 printf("Camera mode changed to %d\n",camera.mode);
+                break;
+            case GLFW_KEY_R:
+                // toggle camera perspective
+                if(camera.perspective == CAMERA_PERSPECTIVE_FIRST_PERSON)
+                    camera.perspective = CAMERA_PERSPECTIVE_THIRD_PERSON;
+                else
+                    camera.perspective = CAMERA_PERSPECTIVE_FIRST_PERSON;
+
+                printf("Camera perspective changed to %d\n",camera.perspective);
                 break;
             case GLFW_KEY_UP:
                 light.ambient_intensity += 0.05f;

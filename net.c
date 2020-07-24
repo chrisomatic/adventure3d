@@ -79,11 +79,6 @@ static void server_send_world_state(int client_index)
 
     int size = sizeof(PacketType)+sizeof(u8)+(sizeof(ClientPacket)*srvpkt.num_clients) + 4;
 
-#if 0
-    int res = send(server_info.clients[client_index].socket, &srvpkt ,size, 0);
-    if(res < 0)
-        perror("Send failed.\n");
-#else
     struct sockaddr_in addr = server_info.clients[client_index].client_addr;
 
     int len = sizeof(struct sockaddr_in);
@@ -92,8 +87,6 @@ static void server_send_world_state(int client_index)
 
     if(res < 0)
         perror("Send failed.\n");
-#endif
-
 }
 
 int net_server_start()
@@ -128,7 +121,6 @@ int net_server_start()
       
     server_info.servaddr.sin_family      = AF_INET; // IPv4
     server_info.servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    //server_info.servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
     server_info.servaddr.sin_port        = htons(PORT);
       
     // Bind the socket with the server address 
@@ -263,7 +255,7 @@ int net_server_start()
             {
                 ClientPacket* pkt = (ClientPacket*)server_info.buffer;
 
-                printf("%d: P %f %f %f R %f %f\n",pkt->client_id, pkt->position.x,pkt->position.y,pkt->position.z, pkt->angle_h, pkt->angle_v);
+                //printf("%d: P %f %f %f R %f %f\n",pkt->client_id, pkt->position.x,pkt->position.y,pkt->position.z, pkt->angle_h, pkt->angle_v);
 
                 u8 client_index = pkt->client_id;
 
@@ -293,8 +285,6 @@ int net_server_start()
                 }
             }
         }
-
-#if 1
 
         for (int i = 0; i < MAX_CLIENTS; ++i)
         {
@@ -334,7 +324,6 @@ int net_server_start()
                 }
             }
         }
-#endif
 	}
 
     return 0; 
@@ -395,20 +384,12 @@ int net_client_init()
 
 void net_client_send(ClientPacket* pkt)
 {
-#if 0
-    int res = send(client_info.sockfd, pkt ,sizeof(ClientPacket), 0);
-    
-    if(res < 0)
-        perror("Send failed.\n");
-#else
     int len = sizeof(client_info.servaddr);
     int res = sendto(client_info.udp_socket, pkt, sizeof(ClientPacket), MSG_CONFIRM,
               (const struct sockaddr *)&client_info.servaddr,(socklen_t)len);
 
     if(res < 0)
         perror("Send failed.\n");
-
-#endif
 
     return;
 }

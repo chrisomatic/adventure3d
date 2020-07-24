@@ -4,20 +4,7 @@
 
 - Make shader program a property of mesh
 - Make shader program for terrain
-
-## Skybox
-
-- Fix skybox
-
-## Movement
-
-- Add acceleration and max_velocity to movement.
-
-## Misc
-
 - move glfw calls to window file or make a platform file
-- Move camera movement code to player file
-- Fix diffuse lighting
 - create a rat model
 - make rat model move randomly
 - all entities must behave same physics constraints
@@ -29,6 +16,9 @@
 
 # DONE
 
+- Fix diffuse lighting
+- Add acceleration and max_velocity to movement.
+- Fix skybox
 - Basic Mesh Model
 - Basic Rendering
 - Basic Movement system

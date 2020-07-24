@@ -30,7 +30,9 @@ This is a work-in-progress 3d game.
     space = Jump
 
     tab = toggle wireframe
-    m = Toggle camera mode
+
+    r = Toggle camera between 1st and 3rd person
+    m = Toggle camera mode (free or follow player)
 
     arrow-up   = increase ambient brightness
     arrow-down = decrease ambient brightness

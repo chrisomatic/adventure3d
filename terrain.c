@@ -25,7 +25,8 @@ Mesh terrain = {0};
 
 static float terrain_heights[TERRAIN_GRANULARITY][TERRAIN_GRANULARITY] = {0.0f};
 
-static float terrain_scale = 256.0f;
+const float terrain_scale = 256.0f;
+const float pos = terrain_scale / 2.0f;
 
 void terrain_render()
 {
@@ -33,7 +34,7 @@ void terrain_render()
 
     world_set_scale(terrain_scale,1.0f,terrain_scale);
     world_set_rotation(0.0f,0.0f,0.0f);
-    world_set_position(0.0f,0.0f,0.0f);
+    world_set_position(-pos,0.0f,-pos);
 
     Matrix4f* world = get_world_transform();
     Matrix4f* wvp   = get_wvp_transform();
@@ -72,8 +73,8 @@ void terrain_render()
 
 float terrain_get_height(float x, float z)
 {
-    float terrain_x = -x - 0.0f;
-    float terrain_z = -z - 0.0f;
+    float terrain_x = -x + pos;
+    float terrain_z = -z + pos;
 
     float grid_square_size = terrain_scale * (1.0f / TERRAIN_GRANULARITY);
 

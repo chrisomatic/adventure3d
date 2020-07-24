@@ -205,6 +205,7 @@ void simulate()
     //printf("\ntime: %f\n",world.time);
 
     camera_update();
+    player_update();
 
     Vector3f dir;
     copy_v3f(&dir, &light.direction);
@@ -218,12 +219,12 @@ void simulate()
         ClientPacket pkt = {
             client_id,
             {
-                camera.position.x,
-                camera.position.y,
-                camera.position.z
+                player.position.x,
+                player.position.y,
+                player.position.z
             }, // position
-            camera.angle_h,
-            camera.angle_v
+            player.angle_h,
+            player.angle_v
         };
 
         if(memcmp(&pkt,&pkt_prior,sizeof(ClientPacket)) != 0)
@@ -240,7 +241,7 @@ void simulate()
         {
             num_other_players = srvpkt.num_clients;
 
-            printf("Num Clients: %d.\n",srvpkt.num_clients);
+            //printf("Num Clients: %d.\n",srvpkt.num_clients);
 
             for(int i = 0; i < srvpkt.num_clients; ++i)
             {
@@ -250,13 +251,13 @@ void simulate()
                 player_info[i].angle_h    = srvpkt.clients[i].angle_h;
                 player_info[i].angle_v    = srvpkt.clients[i].angle_v;
                 
-                printf("Client%d: P %f %f %f R %f %f\n", i,
-                        srvpkt.clients[i].position.x,
-                        srvpkt.clients[i].position.y,
-                        srvpkt.clients[i].position.z,
-                        srvpkt.clients[i].angle_h,
-                        srvpkt.clients[i].angle_v
-                );
+                //printf("Client%d: P %f %f %f R %f %f\n", i,
+                //        srvpkt.clients[i].position.x,
+                //        srvpkt.clients[i].position.y,
+                //        srvpkt.clients[i].position.z,
+                //        srvpkt.clients[i].angle_h,
+                //        srvpkt.clients[i].angle_v
+                //);
             }
         }
     }
@@ -277,10 +278,26 @@ void render()
     glUniform3f(dir_light_location.direction, light.direction.x, light.direction.y, light.direction.z);
     glUniform1f(dir_light_location.diffuse_intensity, light.diffuse_intensity);
 
+    if(camera.perspective == CAMERA_PERSPECTIVE_THIRD_PERSON || camera.mode == CAMERA_MODE_FREE)
+    {
+        // render current player
+        world_set_scale(2.0f,2.0f,2.0f);
+        world_set_rotation(-player.angle_v+90.0f,-player.angle_h+90.0f,0.0f);
+        world_set_position(-player.position.x,-player.position.y,-player.position.z);
+
+        _world = get_world_transform();
+        _wvp   = get_wvp_transform();
+
+        glUniformMatrix4fv(world_location,1,GL_TRUE,(const GLfloat*)_world);
+        glUniformMatrix4fv(wvp_location,1,GL_TRUE,(const GLfloat*)_wvp);
+
+        mesh_render(&obj);
+    }
+
     // objects
     for(int i = 0; i < num_other_players; ++i)
     {
-        world_set_scale(5.0f,5.0f,5.0f);
+        world_set_scale(2.0f,2.0f,2.0f);
         world_set_rotation(-player_info[i].angle_v+90.0f,-player_info[i].angle_h+90.0f,0.0f);
         world_set_position(-player_info[i].position.x,-player_info[i].position.y,-player_info[i].position.z);
 

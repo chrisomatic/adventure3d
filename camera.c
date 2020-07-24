@@ -18,6 +18,7 @@ Camera camera;
 
 static void camera_update_velocity();
 static void camera_update_position();
+static void camera_update_perspective();
 static void camera_update_rotations();
 
 //
@@ -85,7 +86,14 @@ void camera_init()
     camera.cursor.x = view_width / 2.0f;
     camera.cursor.y = view_height / 2.0f;
 
-    camera.mode = CAMERA_MODE_LOCKED_TO_PLAYER;
+    camera.player_offset.x = 0.0f;
+    camera.player_offset.y = 0.0f;
+    camera.player_offset.z = 0.0f;
+
+    camera.mode        = CAMERA_MODE_FOLLOW_PLAYER;
+    camera.perspective = CAMERA_PERSPECTIVE_FIRST_PERSON;
+
+    camera.perspective_transition = 0.0f;
 }
 
 
@@ -113,28 +121,52 @@ void camera_update_angle(float cursor_x, float cursor_y)
    //printf("Angle: H %f, V %f\n",camera.angle_h,camera.angle_v);
 }
 
-//
-// Static functions
-//
-
 void camera_update()
 {
     camera_update_velocity();
     camera_update_position();
+    camera_update_perspective();
     camera_update_rotations();
 }
 
+void camera_move_to_player()
+{
+    camera.velocity.x = player.velocity.x;
+    camera.velocity.y = player.velocity.y;
+    camera.velocity.z = player.velocity.z;
+
+    camera.position.x = player.position.x;
+    camera.position.y = player.position.y;
+    camera.position.z = player.position.z;
+
+    camera.target.x = player.target.x;
+    camera.target.y = player.target.y;
+    camera.target.z = player.target.z;
+
+    camera.up.x = player.up.x;
+    camera.up.y = player.up.y;
+    camera.up.z = player.up.z;
+
+    camera.angle_h = player.angle_h;
+    camera.angle_v = player.angle_v;
+}
+
+
+//
+// Static functions
+//
+
 static void camera_update_velocity()
 {
-    if(camera.mode == CAMERA_MODE_LOCKED_TO_PLAYER)
+    if(camera.mode == CAMERA_MODE_FOLLOW_PLAYER)
     {
         float terrain_height = terrain_get_height(camera.position.x, camera.position.z);
-        float margin_of_error = 1.0f;
+        float margin_of_error = 0.05f;
 
         if(camera.position.y > player.height + terrain_height)
         {
             // gravity
-            camera.velocity.y -= 0.06;
+            camera.velocity.y -= 0.02;
             if(camera.position.y > player.height + terrain_height + margin_of_error)
                 player.is_in_air = true;
         }
@@ -146,7 +178,7 @@ static void camera_update_velocity()
             player.jumped = false;
         }
     }
-    else if(camera.mode == CAMERA_MODE_FREEFORM)
+    else if(camera.mode == CAMERA_MODE_FREE)
     {
         if(player.is_in_air)
             player.is_in_air = false;
@@ -155,9 +187,9 @@ static void camera_update_velocity()
     if(player.is_in_air)
         return;
 
-    float accel           = 0.1f;
-    float max_vel         = 0.8f;
-    float friction_factor = 0.02f;
+    float accel           = 0.167f; // 1 meter per second
+    float max_vel         = 0.175f;
+    float friction_factor = 0.008f;
 
     if(player.key_shift)
     {
@@ -165,7 +197,7 @@ static void camera_update_velocity()
         max_vel *= 2.0f;
     }
 
-    if(camera.mode == CAMERA_MODE_FREEFORM)
+    if(camera.mode == CAMERA_MODE_FREE)
     {
         accel   *= 2.0f;
         max_vel *= 2.0f;
@@ -177,12 +209,12 @@ static void camera_update_velocity()
     {
         // jump
         player.jumped = true;
-        camera.velocity.y += 2.0f;
+        camera.velocity.y += 0.4f;
     }
 
     if(player.key_w_down)
     {
-        if(camera.mode == CAMERA_MODE_LOCKED_TO_PLAYER)
+        if(camera.mode == CAMERA_MODE_FOLLOW_PLAYER)
         {
             copy_v3f(&target_dir,&camera.target);
             target_dir.y = 0.0f;
@@ -198,7 +230,7 @@ static void camera_update_velocity()
 
     if(player.key_s_down)
     {
-        if(camera.mode == CAMERA_MODE_LOCKED_TO_PLAYER)
+        if(camera.mode == CAMERA_MODE_FOLLOW_PLAYER)
         {
             copy_v3f(&target_dir,&camera.target);
             target_dir.y = 0.0f;
@@ -235,48 +267,44 @@ static void camera_update_velocity()
     }
 
     // friction
-    switch(camera.mode)
+    if(camera.mode == CAMERA_MODE_FOLLOW_PLAYER)
     {
-        case CAMERA_MODE_FREEFORM:
+        // ground friction
+        if(ABS(camera.velocity.x) > 0.0f || ABS(camera.velocity.z) > 0.0f)
         {
-            // air friction
-            if(ABS(camera.velocity.x) > 0.0f || ABS(camera.velocity.y) > 0.0f || ABS(camera.velocity.z) > 0.0f)
-            {
-                Vector3f friction = {-camera.velocity.x, -camera.velocity.y, -camera.velocity.z};
+            Vector3f friction = {-camera.velocity.x, 0.0f, -camera.velocity.z};
 
-                normalize_v3f(&friction);
+            normalize_v3f(&friction);
+            friction.x *= friction_factor;
+            friction.z *= friction_factor;
 
-                friction.x *= friction_factor;
-                friction.y *= friction_factor;
-                friction.z *= friction_factor;
-
-                camera.velocity.x += friction.x;
-                camera.velocity.y += friction.y;
-                camera.velocity.z += friction.z;
-            }
-        } break;
-        case CAMERA_MODE_LOCKED_TO_PLAYER:
+            camera.velocity.x += friction.x;
+            camera.velocity.z += friction.z;
+        }
+    }
+    else
+    {
+        // air friction
+        if(ABS(camera.velocity.x) > 0.0f || ABS(camera.velocity.y) > 0.0f || ABS(camera.velocity.z) > 0.0f)
         {
-            // ground friction
-            if(ABS(camera.velocity.x) > 0.0f || ABS(camera.velocity.z) > 0.0f)
-            {
-                Vector3f friction = {-camera.velocity.x, 0.0f, -camera.velocity.z};
+            Vector3f friction = {-camera.velocity.x, -camera.velocity.y, -camera.velocity.z};
 
-                normalize_v3f(&friction);
-                friction.x *= friction_factor;
-                friction.z *= friction_factor;
+            normalize_v3f(&friction);
 
-                camera.velocity.x += friction.x;
-                camera.velocity.z += friction.z;
-            }
-        } break;
-        default:
-          break;
+            friction.x *= friction_factor;
+            friction.y *= friction_factor;
+            friction.z *= friction_factor;
+
+            camera.velocity.x += friction.x;
+            camera.velocity.y += friction.y;
+            camera.velocity.z += friction.z;
+        }
+
     }
 
     float velocity_magnitude;
 
-    if(camera.mode == CAMERA_MODE_FREEFORM)
+    if(camera.mode == CAMERA_MODE_FREE)
     {
         velocity_magnitude =
             sqrt(camera.velocity.x*camera.velocity.x + 
@@ -290,7 +318,7 @@ static void camera_update_velocity()
                  camera.velocity.z*camera.velocity.z);
     }
 
-    float margin_of_error = 0.019999f;
+    float margin_of_error = 0.0166f;
 
     if(velocity_magnitude > max_vel)
     {
@@ -298,14 +326,14 @@ static void camera_update_velocity()
         normalize_v3f(&camera.velocity);
 
         camera.velocity.x *= max_vel;
-        if(camera.mode == CAMERA_MODE_FREEFORM)
+        if(camera.mode == CAMERA_MODE_FREE)
             camera.velocity.y *= max_vel;
         camera.velocity.z *= max_vel;
     }
     else if(ABS(velocity_magnitude) < margin_of_error)
     {
         camera.velocity.x = 0.0f;
-        if(camera.mode == CAMERA_MODE_FREEFORM)
+        if(camera.mode == CAMERA_MODE_FREE)
             camera.velocity.y = 0.0f;
         camera.velocity.z = 0.0f;
     }
@@ -316,6 +344,34 @@ static void camera_update_position()
     camera.position.x += camera.velocity.x;
     camera.position.y += camera.velocity.y;
     camera.position.z += camera.velocity.z;
+}
+
+static void camera_update_perspective()
+{
+    if(camera.perspective == CAMERA_PERSPECTIVE_THIRD_PERSON)
+    {
+        if(camera.perspective_transition < 1.0f)
+        {
+            camera.perspective_transition += 0.1f;
+            if(camera.perspective_transition > 1.0f)
+                camera.perspective_transition = 1.0f;
+        }
+
+    }
+    else
+    {
+        if(camera.perspective_transition > 0.0f)
+        {
+            camera.perspective_transition -= 0.1f;
+            if(camera.perspective_transition < 0.0f)
+                camera.perspective_transition = 0.0f;
+        }
+    }
+
+    camera.player_offset.x = camera.perspective_transition*(10.0f*camera.target.x);
+    camera.player_offset.y = camera.perspective_transition*(10.0f*camera.target.y + 6.0f);
+    camera.player_offset.z = camera.perspective_transition*(10.0f*camera.target.z);
+
 }
 
 static void camera_update_rotations()
