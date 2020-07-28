@@ -146,6 +146,9 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
                 printf("Camera mode changed to %d\n",camera.mode);
                 break;
             case GLFW_KEY_R:
+                if(camera.mode != CAMERA_MODE_FOLLOW_PLAYER)
+                    break;
+
                 // toggle camera perspective
                 if(camera.perspective == CAMERA_PERSPECTIVE_FIRST_PERSON)
                     camera.perspective = CAMERA_PERSPECTIVE_THIRD_PERSON;

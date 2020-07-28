@@ -22,12 +22,15 @@
 #include "sky.h"
 #include "terrain.h"
 #include "net.h"
+#include "timer.h"
 
 // =========================
 // Global Vars
 // =========================
 
 GLuint vbo,ibo;
+
+Timer game_timer = {0};
 
 bool client_connected = false;
 bool is_client = false;
@@ -78,7 +81,7 @@ int main(int argc, char* argv[])
             }
             else
             {
-                strncpy(server_ip_address, argv[i], strlen(argv[i]));
+                net_client_set_server_ip(argv[i]);
             }
         }
     }
@@ -104,7 +107,8 @@ void start_game()
 {
     init();
 
-    double lasttime = glfwGetTime();
+    timer_set_fps(&game_timer,TARGET_FPS);
+    timer_begin(&game_timer);
 
     // main game loop
     for(;;)
@@ -116,11 +120,8 @@ void start_game()
         simulate();
         render();
 
-        // wait for next frame
-        while(glfwGetTime() < lasttime + TARGET_SPF)
-            usleep(100);
-
-        lasttime += TARGET_SPF;
+        timer_wait_for_frame(&game_timer);
+        timer_inc_frame(&game_timer);
     }
 
     deinit();
@@ -140,10 +141,7 @@ void init()
 
     if(is_client)
     {
-        client_id = net_client_init();
-
-        if(client_id < 0)
-            printf("Failed to connect to server.\n");
+        net_client_init();
     }
 
     printf("GL version: %s\n",glGetString(GL_VERSION));
@@ -196,8 +194,6 @@ void deinit()
     window_deinit();
 }
 
-ClientPacket pkt_prior = {0};
-
 void simulate()
 {
     world.time += TARGET_SPF;
@@ -214,50 +210,66 @@ void simulate()
     shader_set_float(program, "dl.diffuse_intensity", light.diffuse_intensity);
     shader_set_vec3(program, "dl.direction", dir.x, dir.y, dir.z);
 
-    if(is_client && client_id >= 0)
+    if(is_client)
     {
-        ClientPacket pkt = {
-            client_id,
+        ClientData p =
+        {
             {
                 player.position.x,
                 player.position.y,
                 player.position.z
-            }, // position
+            },
             player.angle_h,
-            player.angle_v
+            player.angle_v,
+            5.0f,
         };
 
-        if(memcmp(&pkt,&pkt_prior,sizeof(ClientPacket)) != 0)
-        {
-            memcpy(&pkt_prior,&pkt,sizeof(ClientPacket));
-            net_client_send(&pkt);
-        }
+        int bytes_sent = net_client_send((u8*)&p,sizeof(ClientData));
 
         // read from server
-        ServerPacket srvpkt = {0};
-        int res = net_client_recv(&srvpkt);
-
-        if(res > 0)
+        for(;;)
         {
-            num_other_players = srvpkt.num_clients;
+            bool data_waiting = net_client_data_waiting();
 
-            //printf("Num Clients: %d.\n",srvpkt.num_clients);
+            if(!data_waiting)
+                break;
 
-            for(int i = 0; i < srvpkt.num_clients; ++i)
+            Packet srvpkt = {0};
+            bool is_latest;
+            int recv_bytes = net_client_recv(&srvpkt, &is_latest);
+
+            if(!is_latest)
+                continue;
+
+            if(recv_bytes > 0)
             {
-                player_info[i].position.x = srvpkt.clients[i].position.x;
-                player_info[i].position.y = srvpkt.clients[i].position.y;
-                player_info[i].position.z = srvpkt.clients[i].position.z;
-                player_info[i].angle_h    = srvpkt.clients[i].angle_h;
-                player_info[i].angle_v    = srvpkt.clients[i].angle_v;
-                
-                //printf("Client%d: P %f %f %f R %f %f\n", i,
-                //        srvpkt.clients[i].position.x,
-                //        srvpkt.clients[i].position.y,
-                //        srvpkt.clients[i].position.z,
-                //        srvpkt.clients[i].angle_h,
-                //        srvpkt.clients[i].angle_v
-                //);
+                WorldState* ws = (WorldState*)srvpkt.data;
+                num_other_players = ws->num_clients - 1;
+
+                printf("Num Other Players: %d.\n",ws->num_clients - 1);
+
+                int player_index = 0;
+                for(int i = 0; i < ws->num_clients; ++i)
+                {
+                    if(i == ws->ignore_id)
+                        continue;
+
+                    player_info[player_index].position.x = ws->client_data[i].position.x;
+                    player_info[player_index].position.y = ws->client_data[i].position.y;
+                    player_info[player_index].position.z = ws->client_data[i].position.z;
+                    player_info[player_index].angle_h    = ws->client_data[i].angle_h;
+                    player_info[player_index].angle_v    = ws->client_data[i].angle_v;
+                    
+                    printf("Client%d: P %f %f %f R %f %f\n", i,
+                            ws->client_data[i].position.x,
+                            ws->client_data[i].position.y,
+                            ws->client_data[i].position.z,
+                            ws->client_data[i].angle_h,
+                            ws->client_data[i].angle_v
+                    );
+
+                    player_index++;
+                }
             }
         }
     }

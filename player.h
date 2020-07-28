@@ -22,6 +22,13 @@ typedef struct
     bool jumped;
 } Player;
 
+typedef struct
+{
+    Vector3f position;
+    float angle_h;
+    float angle_v;
+} PlayerPacket;
+
 extern Player player;
 
 void player_init();

@@ -15,6 +15,7 @@
 #include "camera.h"
 #include "transform.h"
 #include "mesh.h"
+#include "net.h"
 
 #define TERRAIN_GRANULARITY    256
 #define TERRAIN_GRANULARITY_P1 (TERRAIN_GRANULARITY+1)
@@ -23,7 +24,7 @@
 
 Mesh terrain = {0};
 
-static float terrain_heights[TERRAIN_GRANULARITY][TERRAIN_GRANULARITY] = {0.0f};
+static float terrain_heights[TERRAIN_GRANULARITY_P1][TERRAIN_GRANULARITY_P1] = {0.0f};
 
 const float terrain_scale = 256.0f;
 const float pos = terrain_scale / 2.0f;
@@ -130,15 +131,6 @@ void terrain_build(const char* heightmap)
     
     printf("Loaded file %s. w: %d h: %d channels: %d\n",heightmap,x,y,n);
 
-    /*
-    for(int i = 0; i < x; ++i){
-        for(int j = 0; j < y; ++j){
-            printf("%u ",heightdata[i*x+j]);
-        }
-        printf("\n");
-    }
-    */
-
     Vertex terrain_vertices[TERRAIN_VERTEX_COUNT] = {0};
     u32    terrain_indices[TERRAIN_INDEX_COUNT]   = {0};
 
@@ -161,14 +153,6 @@ void terrain_build(const char* heightmap)
 
             terrain_vertices[index].tex_coord.x = 10*i*interval;
             terrain_vertices[index].tex_coord.y = 10*j*interval;
-
-            /*
-            printf("%d: %f %f %f\n",
-                index,
-                terrain_vertices[index].position.x,
-                terrain_vertices[index].position.y,
-                terrain_vertices[index].position.z);
-            */
         }
     }
 
@@ -188,6 +172,7 @@ void terrain_build(const char* heightmap)
 
         index+=6;
     }
+
 
     terrain.num_vertices = TERRAIN_VERTEX_COUNT;
     terrain.vertices = malloc(terrain.num_vertices*sizeof(Vertex));
