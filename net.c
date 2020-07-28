@@ -208,7 +208,7 @@ int net_server_start()
             bool is_latest;
             int bytes_received = net_recv(&server_info, &from, &recv_packet, &is_latest);
 
-            print_packet(&recv_packet);
+            //print_packet(&recv_packet);
 
             // validate packet is legit
             if(recv_packet.header.game_id != game_id)
@@ -389,7 +389,7 @@ int net_client_send(u8* data, u32 len)
     memcpy(pkt.data,data,len);
     pkt.data_len = len;
 
-    print_packet(&pkt);
+    //print_packet(&pkt);
 
     int sent_bytes = net_send(&client_info, &server_address, &pkt);
     return sent_bytes;
