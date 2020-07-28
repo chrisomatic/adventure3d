@@ -3,8 +3,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <errno.h> 
-
-#include <GLFW/glfw3.h>
+#include <time.h>
 
 #include "socket.h"
 #include "util.h"
@@ -33,7 +32,7 @@ typedef struct
 {
     Address address;
     u16 remote_latest_packet_id;
-    double  time_of_latest_packet;
+    clock_t  time_of_latest_packet;
 } ClientInfo;
 
 typedef struct
@@ -179,6 +178,8 @@ int net_server_start()
     */
 
     create_game_id();
+
+    /*
     printf("Initializing GLFW.\n");
 
     if(!glfwInit())
@@ -186,6 +187,7 @@ int net_server_start()
         fprintf(stderr,"Failed to init GLFW!\n");
         return false;
     }
+    */
 
     printf("Server started.\n");
 

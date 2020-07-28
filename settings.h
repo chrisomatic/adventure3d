@@ -7,7 +7,7 @@
 #define ASPECT_DEM  9.0f
 #define ASPECT_RATIO (ASPECT_NUM / ASPECT_DEM)
 
-#define TARGET_FPS     60
+#define TARGET_FPS     60.0f
 #define TARGET_SPF     (1.0f/TARGET_FPS) // seconds per frame
 
 #define FOV      96.0f 

@@ -122,6 +122,8 @@ void start_game()
 
         timer_wait_for_frame(&game_timer);
         timer_inc_frame(&game_timer);
+        double t = timer_get_elapsed(&game_timer);
+        printf("Elapsed time: %f s\n",t);
     }
 
     deinit();
