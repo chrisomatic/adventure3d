@@ -122,8 +122,6 @@ void start_game()
 
         timer_wait_for_frame(&game_timer);
         timer_inc_frame(&game_timer);
-        double t = timer_get_elapsed(&game_timer);
-        printf("Elapsed time: %f s\n",t);
     }
 
     deinit();
@@ -295,7 +293,7 @@ void render()
     if(camera.perspective == CAMERA_PERSPECTIVE_THIRD_PERSON || camera.mode == CAMERA_MODE_FREE)
     {
         // render current player
-        world_set_scale(2.0f,2.0f,2.0f);
+        world_set_scale(1.0f,1.0f,1.0f);
         world_set_rotation(-player.angle_v+90.0f,-player.angle_h+90.0f,0.0f);
         world_set_position(-player.position.x,-player.position.y,-player.position.z);
 
@@ -311,7 +309,7 @@ void render()
     // objects
     for(int i = 0; i < num_other_players; ++i)
     {
-        world_set_scale(2.0f,2.0f,2.0f);
+        world_set_scale(1.0f,1.0f,1.0f);
         world_set_rotation(-player_info[i].angle_v+90.0f,-player_info[i].angle_h+90.0f,0.0f);
         world_set_position(-player_info[i].position.x,-player_info[i].position.y,-player_info[i].position.z);
 

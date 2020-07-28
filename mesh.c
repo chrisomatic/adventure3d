@@ -259,7 +259,7 @@ static void build_object()
     glGenVertexArrays(1, &obj.vao);
     glBindVertexArray(obj.vao);
 
-    mesh_load_model(MODEL_FORMAT_STL,"models/monkey.stl",&obj);
+    mesh_load_model(MODEL_FORMAT_STL,"models/rat.stl",&obj);
     calc_vertex_normals(obj.indices, obj.num_indices, obj.vertices, obj.num_vertices);
 
  	glGenBuffers(1, &obj.vbo);
