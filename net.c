@@ -11,7 +11,7 @@
 #include "net.h"
 #include "packet_queue.h"
 
-#define SERVER_RATE 60.0f
+#define SERVER_RATE 30.0f
 #define PORT 27001
 
 #define PACKET_INFO_MAX_LEN 256
@@ -156,7 +156,6 @@ static NodeInfo server_info = {0};
 
 int net_server_start()
 {
-
     int sock;
 
     printf("Creating socket.\n");
@@ -262,6 +261,8 @@ int net_server_start()
                 ClientData* c = (ClientData*)&world_state.client_data[client_id];
                 printf("Client %u: P %f %f %f R %f %f\n",client_id,c->position.x,c->position.y,c->position.z,c->angle_h,c->angle_v);
             }
+
+            timer_delay_us(100); // delay 100 us
         }
 
         if(server_num_clients > 0)

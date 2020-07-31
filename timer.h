@@ -15,4 +15,5 @@ void timer_wait(Timer* timer, float fps);
 void timer_inc_frame(Timer* timer);
 
 double timer_get_elapsed(Timer* timer);
+void timer_delay_us(int us);
 double timer_get_time();

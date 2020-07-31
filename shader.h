@@ -13,7 +13,6 @@ typedef struct {
 } DirLightLocation;
 
 extern GLuint program;
-extern GLuint sky_program;
 
 extern GLuint world_location;
 extern GLuint wvp_location;
@@ -23,6 +22,7 @@ extern DirLightLocation dir_light_location;
 extern GLuint camera_position_location;
 
 void shader_load_all();
+void shader_build_program(GLuint* p, const char* vert_shader_path, const char* frag_shader_path);
 void shader_deinit();
 
 void shader_set_int(GLuint program, const char* name, int i);

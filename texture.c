@@ -27,7 +27,6 @@ static bool texture_load2d(GLuint* t, const char* filepath)
     
     printf("Loaded file %s. w: %d h: %d\n",filepath,x,y);
 
-
     GLenum format;
     if(n == 3) format = GL_RGB;
     else       format = GL_RGBA;
@@ -111,18 +110,6 @@ void texture_load_all()
         "textures/skybox/front.jpg",
         "textures/skybox/back.jpg"
     };
-
-/*
-
-    char* cube[] = {
-        "textures/skybox2/sky_1.png",
-        "textures/skybox2/sky_2.png",
-        "textures/skybox2/sky_3.png",
-        "textures/skybox2/sky_4.png",
-        "textures/skybox2/sky_5.png",
-        "textures/skybox2/sky_6.png"
-    };
-*/
 
     texture_load_cube(&texture_cube,cube,6);
 }

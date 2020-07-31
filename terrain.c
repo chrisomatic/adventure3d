@@ -27,7 +27,7 @@ Mesh terrain = {0};
 static float terrain_heights[TERRAIN_GRANULARITY_P1][TERRAIN_GRANULARITY_P1] = {0.0f};
 
 const float terrain_scale = 256.0f;
-const float pos = terrain_scale / 2.0f;
+const float terrain_pos = terrain_scale / 2.0f;
 
 void terrain_render()
 {
@@ -35,7 +35,7 @@ void terrain_render()
 
     world_set_scale(terrain_scale,1.0f,terrain_scale);
     world_set_rotation(0.0f,0.0f,0.0f);
-    world_set_position(-pos,0.0f,-pos);
+    world_set_position(-terrain_pos,0.0f,-terrain_pos);
 
     Matrix4f* world = get_world_transform();
     Matrix4f* wvp   = get_wvp_transform();
@@ -72,47 +72,101 @@ void terrain_render()
     texture_unbind();
 }
 
-float terrain_get_height(float x, float z)
+static void get_terrain_points_and_pos(float x, float z, Vector3f* p1, Vector3f* p2, Vector3f* p3, Vector2f* pos)
 {
-    float terrain_x = -x + pos;
-    float terrain_z = -z + pos;
+    float terrain_x = -x + terrain_pos;
+    float terrain_z = -z + terrain_pos;
 
     float grid_square_size = terrain_scale * (1.0f / TERRAIN_GRANULARITY);
 
     int grid_x = (int)floor(terrain_x / grid_square_size);
     if(grid_x < 0 || grid_x >= TERRAIN_GRANULARITY)
-        return 0.0f;
+        return;
 
     int grid_z = (int)floor(terrain_z / grid_square_size);
     if(grid_z < 0 || grid_z >= TERRAIN_GRANULARITY)
-        return 0.0f;
+        return;
 
     float x_coord = fmod(terrain_x,grid_square_size)/grid_square_size;
     float z_coord = fmod(terrain_z,grid_square_size)/grid_square_size;
     
     //printf("grid x: %d z: %d\n",grid_x, grid_z);
 
-    float height = 0.0f;
-
     if (x_coord <= (1.0f-z_coord))
     {
-        Vector3f p1  = {0, terrain_heights[grid_x][grid_z], 0};
-        Vector3f p2  = {1, terrain_heights[grid_x+1][grid_z], 0};
-        Vector3f p3  = {0, terrain_heights[grid_x][grid_z+1], 1};
-        Vector2f pos = {x_coord,z_coord};
-
-        height = barry_centric(p1,p2,p3,pos);
+        p1->x = 0; p1->y = terrain_heights[grid_x][grid_z];   p1->z = 0;
+        p2->x = 1; p2->y = terrain_heights[grid_x+1][grid_z]; p2->z = 1;
+        p3->x = 0; p3->y = terrain_heights[grid_x][grid_z+1]; p3->z = 1;
     }
     else
     {
-        Vector3f p1  = {1, terrain_heights[grid_x+1][grid_z], 0};
-        Vector3f p2  = {1, terrain_heights[grid_x+1][grid_z], 1};
-        Vector3f p3  = {0, terrain_heights[grid_x][grid_z+1], 1};
-        Vector2f pos = {x_coord,z_coord};
-
-        height = barry_centric(p1,p2,p3,pos);
+        p1->x = 1; p1->y = terrain_heights[grid_x+1][grid_z]; p1->z = 0;
+        p2->x = 1; p2->y = terrain_heights[grid_x+1][grid_z]; p2->z = 1;
+        p3->x = 0; p3->y = terrain_heights[grid_x][grid_z+1]; p3->z = 1;
     }
-    return (height);
+
+    if(pos == NULL)
+        return;
+
+    pos->x = x_coord;
+    pos->y = z_coord;
+}
+
+void terrain_get_stats(float x, float z, float* height, float* angle_xy, float* angle_zy)
+{
+    Vector3f a  = {0};
+    Vector3f b  = {0};
+    Vector3f c  = {0};
+    Vector2f pos2 = {0};
+
+    get_terrain_points_and_pos(x,z,&a,&b,&c,&pos2);
+
+    *height = barry_centric(a,b,c,pos2);
+
+    if(angle_xy == NULL && angle_zy == NULL)
+        return;
+
+    float adj = terrain_scale * (1.0f / TERRAIN_GRANULARITY);
+
+    float xy = a.y - b.y;
+    float zy = c.y - b.y;
+
+    *angle_xy = DEG(atan(xy/adj));
+    *angle_zy = DEG(atan(zy/adj));
+
+    /*
+    float b_dot_a = dot_product_v3f(&b,&a);
+    float b_dot_c = dot_product_v3f(&b,&c);
+
+    float mag_a = magnitude_v3f(&a);
+    float mag_c = magnitude_v3f(&c);
+    float mag_b = magnitude_v3f(&b);
+
+    float dem_xy = mag_a*mag_b;
+    float dem_zy = mag_c*mag_b;
+
+    if(angle_xy != NULL)
+    {
+        // (a dot b) / (|a||b|)
+        if(dem_xy == 0.0f)
+            *angle_xy = 0.0f;
+        else 
+            *angle_xy = acos(b_dot_a / dem_xy);
+        
+        *angle_xy = DEG(*angle_xy);
+    }
+
+    if(angle_zy != NULL)
+    {
+        // (c dot b) / (|c||b|)
+        if(dem_zy == 0.0f)
+            *angle_zy = 0.0f;
+        else
+            *angle_zy = acos(b_dot_c / (dem_zy));
+
+        *angle_zy = DEG(*angle_zy);
+    }
+    */
 }
 
 void terrain_build(const char* heightmap)

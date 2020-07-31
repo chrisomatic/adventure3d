@@ -46,6 +46,11 @@ static void multiply_q(Quaternion a,Quaternion b, Quaternion* ret)
 // Vectors
 //
 
+float magnitude_v3f(Vector3f* v)
+{
+    return sqrt(v->x * v->x + v->y*v->y + v->z*v->z);
+}
+
 void copy_v3f(Vector3f* d, Vector3f* s)
 {
     d->x = s->x;
@@ -55,7 +60,7 @@ void copy_v3f(Vector3f* d, Vector3f* s)
 
 void normalize_v3f(Vector3f* v)
 {
-    float len = sqrt(v->x * v->x + v->y*v->y + v->z*v->z);
+    float len = magnitude_v3f(v);
 
     if(len == 0)
     {
@@ -102,23 +107,9 @@ void rotate_v3f(float angle, const Vector3f axis, Vector3f* v)
     v->z = w.z;
 }
 
-//
-// Matrices
-//
-
-void dot_product_m4f(Matrix4f a, Matrix4f b, Matrix4f* result)
+float dot_product_v3f(Vector3f* a, Vector3f* b)
 {
-    for(int i = 0; i < 4; ++i)
-    {
-        for(int j = 0; j < 4; ++j)
-        {
-            result->m[i][j] =
-                a.m[i][0] * b.m[0][j] + 
-                a.m[i][1] * b.m[1][j] + 
-                a.m[i][2] * b.m[2][j] + 
-                a.m[i][3] * b.m[3][j];
-        }
-    }
+    return (a->x * b->x) + (a->y * b->y) + (a->z * b->z);
 }
 
 void sub_v3f(Vector3f a, Vector3f b, Vector3f* ret)
@@ -171,6 +162,26 @@ float barry_centric(Vector3f p1, Vector3f p2, Vector3f p3, Vector2f pos)
     float l3 = 1.0f - l1 - l2;
 
     return l1 * p1.y + l2 * p2.y + l3 * p3.y;
+}
+
+
+//
+// Matrices
+//
+
+void dot_product_m4f(Matrix4f a, Matrix4f b, Matrix4f* result)
+{
+    for(int i = 0; i < 4; ++i)
+    {
+        for(int j = 0; j < 4; ++j)
+        {
+            result->m[i][j] =
+                a.m[i][0] * b.m[0][j] + 
+                a.m[i][1] * b.m[1][j] + 
+                a.m[i][2] * b.m[2][j] + 
+                a.m[i][3] * b.m[3][j];
+        }
+    }
 }
 
 void print_m4f(const char* title, Matrix4f w)

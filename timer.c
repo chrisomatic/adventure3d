@@ -100,3 +100,8 @@ void timer_inc_frame(Timer* timer)
 {
     timer->time_last += timer->spf;
 }
+
+void timer_delay_us(int us)
+{
+    usleep(us);
+}

@@ -43,6 +43,8 @@ typedef struct
 extern const Matrix4f identity_m4f;
 
 // vector
+float magnitude_v3f(Vector3f* v);
+float dot_product_v3f(Vector3f* a, Vector3f* b);
 void copy_v3f(Vector3f* d, Vector3f* s);
 void normalize_v3f(Vector3f* v);
 void cross_v3f(Vector3f a, Vector3f b, Vector3f* ret);

@@ -33,12 +33,19 @@ const u32 sky_indices[] = {
     4,5,6,5,7,6
 };
 
+static GLuint sky_program;
+
 static GLuint sky_vao;
 static GLuint sky_vbo;
 static GLuint sky_ibo;
 
 void sky_init()
 {
+    shader_build_program(&sky_program,
+        "shaders/skybox.vert.glsl",
+        "shaders/skybox.frag.glsl"
+    );
+
     glGenVertexArrays(1, &sky_vao);
     glGenBuffers(1, &sky_vbo);
 

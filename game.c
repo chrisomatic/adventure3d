@@ -22,6 +22,7 @@
 #include "sky.h"
 #include "terrain.h"
 #include "net.h"
+#include "text.h"
 #include "timer.h"
 
 // =========================
@@ -34,7 +35,6 @@ Timer game_timer = {0};
 
 bool client_connected = false;
 bool is_client = false;
-int client_id = -1;
 
 typedef struct
 {
@@ -172,6 +172,7 @@ void init()
     printf("Building terrain.\n");
     terrain_build("textures/heightmap.png");
 
+    text_init();
     player_init();
     camera_init();
     transform_world_init();
@@ -323,6 +324,8 @@ void render()
     }
 
     sky_render();
+
+    text_print(10.0f,10.0f,"Hello!");
 
     glfwSwapBuffers(window);
 }

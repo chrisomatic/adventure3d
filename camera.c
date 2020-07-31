@@ -16,6 +16,7 @@ Camera camera;
 // Prototypes
 //
 
+static void camera_update_accel();
 static void camera_update_velocity();
 static void camera_update_position();
 static void camera_update_perspective();
@@ -156,11 +157,57 @@ void camera_move_to_player()
 // Static functions
 //
 
+static void camera_update_accel()
+{
+    // Sum up all force vectors.
+    // 1. Gravity
+    // 2. Normal to surface
+    // 3. User input force
+    // 4. Friction
+    // 5. Friction (Air)
+
+    Vector3f accel = {0};
+
+    // 1. 
+    accel.y = -9.8f;
+
+    if(!player.is_in_air)
+    {
+        // 2.
+        float terrain_height = 0.0f;
+        float surface_angle_xy = 0.0f;
+        float surface_angle_zy = 0.0f;
+
+        terrain_get_stats(
+                camera.position.x, 
+                camera.position.z,
+                &terrain_height,
+                &surface_angle_xy,
+                &surface_angle_zy
+        );
+
+        printf("Angles: xy %f, zy %f\n",surface_angle_xy, surface_angle_zy);
+
+        // 3.
+
+        // 4.
+    }
+    else
+    {
+        // 5.
+    }
+}
+
 static void camera_update_velocity()
 {
+
+    //camera_update_accel(); // @TEMP
+
     if(camera.mode == CAMERA_MODE_FOLLOW_PLAYER)
     {
-        float terrain_height = terrain_get_height(camera.position.x, camera.position.z);
+        float terrain_height = 0.0f;
+        terrain_get_stats(camera.position.x, camera.position.z, &terrain_height, NULL, NULL);
+
         float margin_of_error = 0.05f;
 
         if(camera.position.y > player.height + terrain_height)
@@ -306,10 +353,7 @@ static void camera_update_velocity()
 
     if(camera.mode == CAMERA_MODE_FREE)
     {
-        velocity_magnitude =
-            sqrt(camera.velocity.x*camera.velocity.x + 
-                 camera.velocity.y*camera.velocity.y +
-                 camera.velocity.z*camera.velocity.z );
+        velocity_magnitude = magnitude_v3f(&camera.velocity);
     }
     else
     {

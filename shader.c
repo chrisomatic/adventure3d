@@ -9,7 +9,6 @@
 #include "shader.h"
 
 GLuint program;
-GLuint sky_program;
 
 GLuint world_location;
 GLuint wvp_location;
@@ -20,12 +19,14 @@ GLuint camera_position_location;
 
 DirLightLocation dir_light_location;
 
-static void shader_build_program(GLuint* p, const char* vert_shader_path, const char* frag_shader_path);
 static void shader_add(GLuint program, GLenum shader_type, const char* shader_file_path);
 
 void shader_load_all()
 {
-    shader_build_program(&program,"shaders/basic.vert.glsl","shaders/basic.frag.glsl");
+    shader_build_program(&program,
+        "shaders/basic.vert.glsl",
+        "shaders/basic.frag.glsl"
+    );
 
     // Get uniform locations
     world_location = glGetUniformLocation(program,"world");
@@ -40,19 +41,6 @@ void shader_load_all()
 
     wireframe_location = glGetUniformLocation(program,"wireframe");
     camera_position_location = glGetUniformLocation(program,"camera_position");
-
-    if(world_location                       == INVALID_UNIFORM_LOCATION ||
-       sampler                              == INVALID_UNIFORM_LOCATION ||
-       dir_light_location.color             == INVALID_UNIFORM_LOCATION ||
-       dir_light_location.ambient_intensity == INVALID_UNIFORM_LOCATION ||
-       dir_light_location.diffuse_intensity == INVALID_UNIFORM_LOCATION ||
-       dir_light_location.direction         == INVALID_UNIFORM_LOCATION
-      ) {
-        fprintf(stderr,"Failed to find all shader uniform locations.\n");
-    }
-
-    // sky
-    shader_build_program(&sky_program,"shaders/skybox.vert.glsl","shaders/skybox.frag.glsl");
 }
 
 void shader_deinit()
@@ -60,7 +48,7 @@ void shader_deinit()
     glDeleteProgram(program);
 }
 
-static void shader_build_program(GLuint* p, const char* vert_shader_path, const char* frag_shader_path)
+void shader_build_program(GLuint* p, const char* vert_shader_path, const char* frag_shader_path)
 {
 	*p = glCreateProgram();
 

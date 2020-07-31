@@ -15,5 +15,6 @@ gcc game.c \
     socket.c \
     net.c \
     timer.c \
+    text.c \
     -lglfw -lGLU -lGLEW -lGL -lm \
     -o adventure
