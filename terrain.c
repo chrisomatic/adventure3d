@@ -72,7 +72,7 @@ void terrain_render()
     texture_unbind();
 }
 
-static void get_terrain_points_and_pos(float x, float z, Vector3f* p1, Vector3f* p2, Vector3f* p3, Vector2f* pos)
+static bool get_terrain_points_and_pos(float x, float z, Vector3f* p1, Vector3f* p2, Vector3f* p3, Vector2f* pos)
 {
     float terrain_x = -x + terrain_pos;
     float terrain_z = -z + terrain_pos;
@@ -81,11 +81,11 @@ static void get_terrain_points_and_pos(float x, float z, Vector3f* p1, Vector3f*
 
     int grid_x = (int)floor(terrain_x / grid_square_size);
     if(grid_x < 0 || grid_x >= TERRAIN_GRANULARITY)
-        return;
+        return false;
 
     int grid_z = (int)floor(terrain_z / grid_square_size);
     if(grid_z < 0 || grid_z >= TERRAIN_GRANULARITY)
-        return;
+        return false;
 
     float x_coord = fmod(terrain_x,grid_square_size)/grid_square_size;
     float z_coord = fmod(terrain_z,grid_square_size)/grid_square_size;
@@ -106,10 +106,12 @@ static void get_terrain_points_and_pos(float x, float z, Vector3f* p1, Vector3f*
     }
 
     if(pos == NULL)
-        return;
+        return true;
 
     pos->x = x_coord;
     pos->y = z_coord;
+
+    return true;
 }
 
 void terrain_get_stats(float x, float z, float* height, float* angle_xy, float* angle_zy)
@@ -119,9 +121,9 @@ void terrain_get_stats(float x, float z, float* height, float* angle_xy, float* 
     Vector3f c  = {0};
     Vector2f pos2 = {0};
 
-    get_terrain_points_and_pos(x,z,&a,&b,&c,&pos2);
+    bool res = get_terrain_points_and_pos(x,z,&a,&b,&c,&pos2);
 
-    *height = barry_centric(a,b,c,pos2);
+    *height = res ? barry_centric(a,b,c,pos2) : 0.0f;
 
     if(angle_xy == NULL && angle_zy == NULL)
         return;
@@ -133,40 +135,6 @@ void terrain_get_stats(float x, float z, float* height, float* angle_xy, float* 
 
     *angle_xy = DEG(atan(xy/adj));
     *angle_zy = DEG(atan(zy/adj));
-
-    /*
-    float b_dot_a = dot_product_v3f(&b,&a);
-    float b_dot_c = dot_product_v3f(&b,&c);
-
-    float mag_a = magnitude_v3f(&a);
-    float mag_c = magnitude_v3f(&c);
-    float mag_b = magnitude_v3f(&b);
-
-    float dem_xy = mag_a*mag_b;
-    float dem_zy = mag_c*mag_b;
-
-    if(angle_xy != NULL)
-    {
-        // (a dot b) / (|a||b|)
-        if(dem_xy == 0.0f)
-            *angle_xy = 0.0f;
-        else 
-            *angle_xy = acos(b_dot_a / dem_xy);
-        
-        *angle_xy = DEG(*angle_xy);
-    }
-
-    if(angle_zy != NULL)
-    {
-        // (c dot b) / (|c||b|)
-        if(dem_zy == 0.0f)
-            *angle_zy = 0.0f;
-        else
-            *angle_zy = acos(b_dot_c / (dem_zy));
-
-        *angle_zy = DEG(*angle_zy);
-    }
-    */
 }
 
 void terrain_build(const char* heightmap)

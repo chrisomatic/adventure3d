@@ -41,6 +41,19 @@ typedef struct
     Vector3f position;
     float angle_h;
     float angle_v;
+    float time_received;
+} PlayerDataPoint;
+
+typedef struct
+{
+    PlayerDataPoint prior;
+    PlayerDataPoint current;
+    
+    double delta_time;
+    double time_since_last_packet;
+    Vector3f guessed_velocity;
+    float guessed_angle_h_vel;
+    float guessed_angle_v_vel;
 } PlayerInfo;
 
 PlayerInfo player_info[MAX_CLIENTS] = {0};
@@ -255,12 +268,41 @@ void simulate()
                     if(i == ws->ignore_id)
                         continue;
 
-                    player_info[player_index].position.x = ws->client_data[i].position.x;
-                    player_info[player_index].position.y = ws->client_data[i].position.y;
-                    player_info[player_index].position.z = ws->client_data[i].position.z;
-                    player_info[player_index].angle_h    = ws->client_data[i].angle_h;
-                    player_info[player_index].angle_v    = ws->client_data[i].angle_v;
+                    // copy current point to prior
+                    memcpy(&player_info[player_index].prior, &player_info[player_index].current,sizeof(PlayerDataPoint));
+
+                    PlayerDataPoint* c = &player_info[player_index].current;
+                    PlayerDataPoint* p = &player_info[player_index].prior;
+
+                    c->time_received = timer_get_time();
+                    c->position.x    = ws->client_data[i].position.x;
+                    c->position.y    = ws->client_data[i].position.y;
+                    c->position.z    = ws->client_data[i].position.z;
+                    c->angle_h       = ws->client_data[i].angle_h;
+                    c->angle_v       = ws->client_data[i].angle_v;
+
+                    player_info[player_index].time_since_last_packet = 0.0f;
+
+                    // calculate 
+                    player_info[player_index].delta_time = 
+                        c->time_received - p->time_received;
+
+                    player_info[player_index].guessed_velocity.x = 
+                        (c->position.x - p->position.x) / player_info[player_index].delta_time;
+
+                    player_info[player_index].guessed_velocity.y = 
+                        (c->position.y - p->position.y) / player_info[player_index].delta_time;
+
+                    player_info[player_index].guessed_velocity.z = 
+                        (c->position.z - p->position.z) / player_info[player_index].delta_time;
+
+                    player_info[player_index].guessed_angle_h_vel = 
+                        (RAD(c->angle_h) - RAD(p->angle_h)) / player_info[player_index].delta_time;
+
+                    player_info[player_index].guessed_angle_v_vel = 
+                        (RAD(c->angle_v) - RAD(p->angle_v)) / player_info[player_index].delta_time;
                     
+                    /*
                     printf("Client%d: P %f %f %f R %f %f\n", i,
                             ws->client_data[i].position.x,
                             ws->client_data[i].position.y,
@@ -268,6 +310,7 @@ void simulate()
                             ws->client_data[i].angle_h,
                             ws->client_data[i].angle_v
                     );
+                    */
 
                     player_index++;
                 }
@@ -311,8 +354,31 @@ void render()
     for(int i = 0; i < num_other_players; ++i)
     {
         world_set_scale(1.0f,1.0f,1.0f);
-        world_set_rotation(-player_info[i].angle_v+90.0f,-player_info[i].angle_h+90.0f,0.0f);
-        world_set_position(-player_info[i].position.x,-player_info[i].position.y,-player_info[i].position.z);
+
+        float angle_v_interp = player_info[i].time_since_last_packet*(player_info[i].guessed_angle_v_vel);
+        float angle_h_interp = player_info[i].time_since_last_packet*(player_info[i].guessed_angle_h_vel);
+
+        world_set_rotation(
+            -(player_info[i].current.angle_v + DEG(angle_v_interp))+90.0f,
+            -(player_info[i].current.angle_h + DEG(angle_h_interp))+90.0f,
+            0.0f
+        );
+
+        Vector3f pos_interp = {
+            player_info[i].time_since_last_packet*(player_info[i].guessed_velocity.x),
+            player_info[i].time_since_last_packet*(player_info[i].guessed_velocity.y),
+            player_info[i].time_since_last_packet*(player_info[i].guessed_velocity.z)
+        };
+
+        //printf("Interp: P %f %f %f R %f %f\n",pos_interp.x, pos_interp.y, pos_interp.z, angle_h_interp, angle_v_interp);
+
+        world_set_position(
+            -(player_info[i].current.position.x + pos_interp.x),
+            -(player_info[i].current.position.y + pos_interp.y),
+            -(player_info[i].current.position.z + pos_interp.z)
+        );
+
+        player_info[i].time_since_last_packet += TARGET_SPF;
 
         _world = get_world_transform();
         _wvp   = get_wvp_transform();

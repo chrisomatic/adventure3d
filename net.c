@@ -215,6 +215,7 @@ int net_server_start()
             if(recv_packet.header.game_id != game_id)
             {
                 printf("Invalid packet game_id 0x%08x != 0x%08x\n",recv_packet.header.game_id, game_id);
+                timer_delay_us(10); // delay 10 us
                 continue;
             }
 
@@ -262,7 +263,7 @@ int net_server_start()
                 printf("Client %u: P %f %f %f R %f %f\n",client_id,c->position.x,c->position.y,c->position.z,c->angle_h,c->angle_v);
             }
 
-            timer_delay_us(100); // delay 100 us
+            timer_delay_us(10); // delay 10 us
         }
 
         if(server_num_clients > 0)
