@@ -8,12 +8,31 @@ This is a work-in-progress 3d game.
 
 ```bash
 
-    # Make sure you have GLFW installed (X11)
-    sudo pacman -S glfw
+    # Make sure you have GLFW (X11) and GLEW installed
+    sudo pacman -S --needed glfw glew
 
     ./build.sh
     ./adventure
+```
 
+## Host Server
+
+```bash
+    ./server.sh
+```
+
+## Join Server
+
+Public server
+
+```bash
+    ./client.sh
+```
+
+Local server
+
+```bash
+    ./client_local.sh
 ```
 
 ## Controls
