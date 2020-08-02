@@ -10,7 +10,7 @@ gcc game.c \
     texture.c \
     player.c \
     sky.c \
-    lighting.c \
+    light.c \
     terrain.c \
     socket.c \
     net.c \

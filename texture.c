@@ -102,6 +102,7 @@ void texture_load_all()
     texture_load2d(&texture1,"textures/grass.png");
     texture_load2d(&texture2,"textures/donut.png");
 
+#if 0
     char* cube[] = {
         "textures/skybox/right.jpg",
         "textures/skybox/left.jpg",
@@ -110,6 +111,16 @@ void texture_load_all()
         "textures/skybox/front.jpg",
         "textures/skybox/back.jpg"
     };
+#else
+    char* cube[] = {
+        "textures/skybox2/right.png",
+        "textures/skybox2/left.png",
+        "textures/skybox2/top.png",
+        "textures/skybox2/bottom.png",
+        "textures/skybox2/front.png",
+        "textures/skybox2/back.png",
+    };
+#endif
 
     texture_load_cube(&texture_cube,cube,6);
 }

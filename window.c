@@ -9,7 +9,7 @@
 #include "window.h"
 #include "camera.h"
 #include "player.h"
-#include "lighting.h"
+#include "light.h"
 #include "mesh.h"
 
 GLFWwindow* window;
@@ -158,10 +158,10 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
                 printf("Camera perspective changed to %d\n",camera.perspective);
                 break;
             case GLFW_KEY_UP:
-                light.ambient_intensity += 0.05f;
+                sunlight.base.ambient_intensity += 0.05f;
                 break;
             case GLFW_KEY_DOWN:
-                light.ambient_intensity -= 0.05f;
+                sunlight.base.ambient_intensity -= 0.05f;
                 break;
             case GLFW_KEY_ESCAPE:
             {

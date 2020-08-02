@@ -17,7 +17,7 @@
 #include "camera.h"
 #include "transform.h"
 #include "player.h"
-#include "lighting.h"
+#include "light.h"
 #include "mesh.h"
 #include "sky.h"
 #include "terrain.h"
@@ -189,7 +189,7 @@ void init()
     player_init();
     camera_init();
     transform_world_init();
-    lighting_init();
+    light_init();
     sky_init();
 
     glUniform1i(sampler, 0);
@@ -218,10 +218,10 @@ void simulate()
     player_update();
 
     Vector3f dir;
-    copy_v3f(&dir, &light.direction);
+    copy_v3f(&dir, &sunlight.direction);
     normalize_v3f(&dir);
 
-    shader_set_float(program, "dl.diffuse_intensity", light.diffuse_intensity);
+    shader_set_float(program, "dl.diffuse_intensity", sunlight.base.diffuse_intensity);
     shader_set_vec3(program, "dl.direction", dir.x, dir.y, dir.z);
 
     if(is_client)
@@ -329,10 +329,10 @@ void render()
 
     terrain_render();
 
-    glUniform3f(dir_light_location.color, light.color.x, light.color.y, light.color.z);
-    glUniform1f(dir_light_location.ambient_intensity, light.ambient_intensity);
-    glUniform3f(dir_light_location.direction, light.direction.x, light.direction.y, light.direction.z);
-    glUniform1f(dir_light_location.diffuse_intensity, light.diffuse_intensity);
+    glUniform3f(dir_light_location.color, sunlight.base.color.x, sunlight.base.color.y, sunlight.base.color.z);
+    glUniform1f(dir_light_location.ambient_intensity, sunlight.base.ambient_intensity);
+    glUniform3f(dir_light_location.direction, sunlight.direction.x, sunlight.direction.y, sunlight.direction.z);
+    glUniform1f(dir_light_location.diffuse_intensity, sunlight.base.diffuse_intensity);
 
     if(camera.perspective == CAMERA_PERSPECTIVE_THIRD_PERSON || camera.mode == CAMERA_MODE_FREE)
     {

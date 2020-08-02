@@ -17,17 +17,15 @@
 #include "mesh.h"
 #include "net.h"
 
-#define TERRAIN_GRANULARITY    256
-#define TERRAIN_GRANULARITY_P1 (TERRAIN_GRANULARITY+1)
-#define TERRAIN_VERTEX_COUNT   (TERRAIN_GRANULARITY_P1*TERRAIN_GRANULARITY_P1)
-#define TERRAIN_INDEX_COUNT    (TERRAIN_GRANULARITY*TERRAIN_GRANULARITY*6)
+#define TERRAIN_SCALE_FACTOR 2.0f
 
 Mesh terrain = {0};
 
-static float terrain_heights[TERRAIN_GRANULARITY_P1][TERRAIN_GRANULARITY_P1] = {0.0f};
+static float* terrain_heights;
+static int terrain_heights_width;
 
-const float terrain_scale = 256.0f;
-const float terrain_pos = terrain_scale / 2.0f;
+static float terrain_scale;
+static float terrain_pos;
 
 void terrain_render()
 {
@@ -77,14 +75,14 @@ static bool get_terrain_points_and_pos(float x, float z, Vector3f* p1, Vector3f*
     float terrain_x = -x + terrain_pos;
     float terrain_z = -z + terrain_pos;
 
-    float grid_square_size = terrain_scale * (1.0f / TERRAIN_GRANULARITY);
+    float grid_square_size = terrain_scale * (1.0f / terrain_heights_width);
 
     int grid_x = (int)floor(terrain_x / grid_square_size);
-    if(grid_x < 0 || grid_x >= TERRAIN_GRANULARITY)
+    if(grid_x < 0 || grid_x >= terrain_heights_width)
         return false;
 
     int grid_z = (int)floor(terrain_z / grid_square_size);
-    if(grid_z < 0 || grid_z >= TERRAIN_GRANULARITY)
+    if(grid_z < 0 || grid_z >= terrain_heights_width)
         return false;
 
     float x_coord = fmod(terrain_x,grid_square_size)/grid_square_size;
@@ -92,17 +90,19 @@ static bool get_terrain_points_and_pos(float x, float z, Vector3f* p1, Vector3f*
     
     //printf("grid x: %d z: %d\n",grid_x, grid_z);
 
+    int g = terrain_heights_width+1;
+
     if (x_coord <= (1.0f-z_coord))
     {
-        p1->x = 0; p1->y = terrain_heights[grid_x][grid_z];   p1->z = 0;
-        p2->x = 1; p2->y = terrain_heights[grid_x+1][grid_z]; p2->z = 1;
-        p3->x = 0; p3->y = terrain_heights[grid_x][grid_z+1]; p3->z = 1;
+        p1->x = 0; p1->y = terrain_heights[g*grid_x+grid_z];   p1->z = 0;
+        p2->x = 1; p2->y = terrain_heights[(g*grid_x+1)+grid_z]; p2->z = 1;
+        p3->x = 0; p3->y = terrain_heights[g*grid_x+(grid_z+1)]; p3->z = 1;
     }
     else
     {
-        p1->x = 1; p1->y = terrain_heights[grid_x+1][grid_z]; p1->z = 0;
-        p2->x = 1; p2->y = terrain_heights[grid_x+1][grid_z]; p2->z = 1;
-        p3->x = 0; p3->y = terrain_heights[grid_x][grid_z+1]; p3->z = 1;
+        p1->x = 1; p1->y = terrain_heights[(g*grid_x+1)+grid_z]; p1->z = 0;
+        p2->x = 1; p2->y = terrain_heights[(g*grid_x+1)+grid_z]; p2->z = 1;
+        p3->x = 0; p3->y = terrain_heights[g*grid_x+(grid_z+1)]; p3->z = 1;
     }
 
     if(pos == NULL)
@@ -128,7 +128,7 @@ void terrain_get_stats(float x, float z, float* height, float* angle_xy, float* 
     if(angle_xy == NULL && angle_zy == NULL)
         return;
 
-    float adj = terrain_scale * (1.0f / TERRAIN_GRANULARITY);
+    float adj = terrain_scale * (1.0f / terrain_heights_width);
 
     float xy = a.y - b.y;
     float zy = c.y - b.y;
@@ -153,10 +153,27 @@ void terrain_build(const char* heightmap)
     
     printf("Loaded file %s. w: %d h: %d channels: %d\n",heightmap,x,y,n);
 
-    Vertex terrain_vertices[TERRAIN_VERTEX_COUNT] = {0};
-    u32    terrain_indices[TERRAIN_INDEX_COUNT]   = {0};
+    terrain_heights_width = x-1;
+    int terrain_heights_width_p1 = x;
 
-    const float interval = 1.0f/TERRAIN_GRANULARITY;
+    terrain_scale = TERRAIN_SCALE_FACTOR*terrain_heights_width;
+    terrain_pos = terrain_scale / 2.0f;
+
+    int terrain_vertex_count = terrain_heights_width_p1*terrain_heights_width_p1;
+    int terrain_index_count = terrain_heights_width*terrain_heights_width*6;
+
+    Vertex* terrain_vertices = calloc(terrain_vertex_count,sizeof(Vertex));
+    u32*    terrain_indices  = calloc(terrain_index_count,sizeof(u32));
+
+    terrain_heights = calloc(terrain_heights_width_p1*terrain_heights_width_p1,sizeof(float));
+
+    if(!terrain_heights)
+    {
+        printf("Failed to allocate memory for terrain height array");
+        return;
+    }
+
+    const float interval = 1.0f/terrain_heights_width;
 
     //printf("===== TERRAIN =====\n");
     
@@ -167,10 +184,10 @@ void terrain_build(const char* heightmap)
             int index = i*(x)+j;
 
             float norm_height = (heightdata[index]/8.0f);
-            terrain_heights[i][j] = norm_height;
+            terrain_heights[index] = norm_height;
 
             terrain_vertices[index].position.x = i*interval;
-            terrain_vertices[index].position.y = -terrain_heights[i][j];
+            terrain_vertices[index].position.y = -terrain_heights[index];
             terrain_vertices[index].position.z = j*interval;
 
             terrain_vertices[index].tex_coord.x = 10*i*interval;
@@ -180,13 +197,13 @@ void terrain_build(const char* heightmap)
 
     int index = 0;
 
-    for(int i = 0; i < TERRAIN_INDEX_COUNT; i += 6)
+    for(int i = 0; i < terrain_index_count; i += 6)
     {
-        if((i/6) > 0 && (i/6) % TERRAIN_GRANULARITY == 0)
+        if((i/6) > 0 && (i/6) % terrain_heights_width == 0)
             index += 6;
 
         terrain_indices[i]   = (index / 6);
-        terrain_indices[i+1] = terrain_indices[i] + TERRAIN_GRANULARITY_P1;
+        terrain_indices[i+1] = terrain_indices[i] + terrain_heights_width_p1;
         terrain_indices[i+2] = terrain_indices[i] + 1;
         terrain_indices[i+3] = terrain_indices[i+1];
         terrain_indices[i+4] = terrain_indices[i+1] + 1;
@@ -196,11 +213,11 @@ void terrain_build(const char* heightmap)
     }
 
 
-    terrain.num_vertices = TERRAIN_VERTEX_COUNT;
+    terrain.num_vertices = terrain_vertex_count;
     terrain.vertices = malloc(terrain.num_vertices*sizeof(Vertex));
     memcpy(terrain.vertices,terrain_vertices,terrain.num_vertices*sizeof(Vertex));
 
-    terrain.num_indices = TERRAIN_INDEX_COUNT;
+    terrain.num_indices = terrain_index_count;
     terrain.indices = malloc(terrain.num_indices*sizeof(u32));
     memcpy(terrain.indices,terrain_indices,terrain.num_indices*sizeof(u32));
 
@@ -215,4 +232,7 @@ void terrain_build(const char* heightmap)
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, terrain.num_indices*sizeof(u32), terrain.indices, GL_STATIC_DRAW);
 
     memcpy(&terrain.mat.texture,&texture1,sizeof(GLuint));
+
+    free(terrain_vertices);
+    free(terrain_indices);
 }
