@@ -1,6 +1,7 @@
 #pragma once
 
-#define PI     3.14159265358979323
+#define PI        3.14159265358979323
+#define PI_OVER_2 PI / 2.0f
 
 #define RAD(x) (((x) * PI) / 180.0f)
 #define DEG(x) (((x) * 180.0f) / PI)
@@ -49,6 +50,7 @@ void copy_v3f(Vector3f* d, Vector3f* s);
 void normalize_v3f(Vector3f* v);
 void cross_v3f(Vector3f a, Vector3f b, Vector3f* ret);
 void rotate_v3f(float angle, const Vector3f axis, Vector3f* v);
+void get_normal_v3f(Vector3f a, Vector3f b, Vector3f c, Vector3f* norm);
 void calc_vertex_normals(const unsigned int* indices, unsigned int index_count, Vertex* vertices, unsigned int vertex_count);
 
 // matrix

@@ -20,6 +20,7 @@ typedef struct
 
 typedef struct {
 
+    Vector3f accel;
     Vector3f velocity;
     Vector3f position;
     Vector3f target;

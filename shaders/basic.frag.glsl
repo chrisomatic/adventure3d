@@ -24,7 +24,7 @@ void main()
 {
     if(wireframe == 1)
     {
-        frag_color = vec4(0.6f,0.6f,0.6f,1.0f);
+        frag_color = vec4(0.2f,1.0f,0.2f,1.0f);
     }
     else
     {

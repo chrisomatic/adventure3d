@@ -126,6 +126,17 @@ void add_v3f(Vector3f a, Vector3f b, Vector3f* ret)
     ret->z = a.z + b.z;
 }
 
+void get_normal_v3f(Vector3f a, Vector3f b, Vector3f c, Vector3f* norm)
+{
+    Vector3f ba, ca;
+
+    sub_v3f(b,a,&ba);
+    sub_v3f(c,a,&ca);
+
+    cross_v3f(ba, ca, norm);
+    normalize_v3f(norm);
+}
+
 void calc_vertex_normals(const u32* indices, u32 index_count, Vertex* vertices, u32 vertex_count)
 {
     for (int i = 0; i < index_count; i += 3)

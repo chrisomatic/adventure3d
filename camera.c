@@ -10,6 +10,8 @@
 
 #include "camera.h"
 
+#define ACCEL_DUE_TO_GRAVITY -9.8f
+
 Camera camera;
 
 //
@@ -18,6 +20,7 @@ Camera camera;
 
 static void camera_update_accel();
 static void camera_update_velocity();
+static void camera_update_velocity2();
 static void camera_update_position();
 static void camera_update_perspective();
 static void camera_update_rotations();
@@ -124,7 +127,8 @@ void camera_update_angle(float cursor_x, float cursor_y)
 
 void camera_update()
 {
-    camera_update_velocity();
+    //camera_update_accel();
+    camera_update_velocity2();
     camera_update_position();
     camera_update_perspective();
     camera_update_rotations();
@@ -161,52 +165,150 @@ static void camera_update_accel()
 {
     // Sum up all force vectors.
     // 1. Gravity
-    // 2. Normal to surface
-    // 3. User input force
-    // 4. Friction
-    // 5. Friction (Air)
+    // 2. User input force
+    // 3. Friction
+    // 4. Friction (Air)
 
-    Vector3f accel = {0};
+    Vector3f gravity    = {0};
+    Vector3f friction   = {0};
+    Vector3f user_force = {0};
 
-    // 1. 
-    accel.y = -9.8f;
+    float accel_factor = 0.1f;
+    float coeff_friction_ground = 0.3f;
+    float coeff_friction_air = 0.1f;
 
-    if(!player.is_in_air)
+    Vector3f target_dir = {0};
+
+    if(player.key_w_down)
     {
-        // 2.
+        copy_v3f(&target_dir,&camera.target);
+
+        if(camera.mode == CAMERA_MODE_FOLLOW_PLAYER)
+        {
+            target_dir.y = 0.0f;
+            normalize_v3f(&target_dir);
+        }
+
+        user_force.x += -1*accel_factor*target_dir.x;
+        user_force.y += -1*accel_factor*target_dir.y;
+        user_force.z += -1*accel_factor*target_dir.z;
+    }
+
+    if(player.key_s_down)
+    {
+        copy_v3f(&target_dir,&camera.target);
+
+        if(camera.mode == CAMERA_MODE_FOLLOW_PLAYER)
+        {
+            target_dir.y = 0.0f;
+            normalize_v3f(&target_dir);
+        }
+
+        user_force.x += accel_factor*target_dir.x;
+        user_force.y += accel_factor*target_dir.y;
+        user_force.z += accel_factor*target_dir.z;
+    }
+
+    if(player.key_a_down)
+    {
+        cross_v3f(camera.up, camera.target, &target_dir);
+        normalize_v3f(&target_dir);
+
+        user_force.x += -1*accel_factor*target_dir.x;
+        user_force.y += -1*accel_factor*target_dir.y;
+        user_force.z += -1*accel_factor*target_dir.z;
+    }
+
+    if(player.key_d_down)
+    {
+        cross_v3f(camera.up, camera.target, &target_dir);
+        normalize_v3f(&target_dir);
+
+        user_force.x += accel_factor*target_dir.x;
+        user_force.y += accel_factor*target_dir.y;
+        user_force.z += accel_factor*target_dir.z;
+    }
+
+    if(player.is_in_air)
+    {
+        gravity.y = ACCEL_DUE_TO_GRAVITY;
+
+        user_force.x = accel_factor*target_dir.x;
+        user_force.y = camera.mode == CAMERA_MODE_FREE ? accel_factor*target_dir.y : 0.0f;
+        user_force.z = accel_factor*target_dir.x;
+
+        friction.x = -coeff_friction_air*user_force.x;
+        friction.y = -coeff_friction_air*user_force.y;
+        friction.z = -coeff_friction_air*user_force.z;
+    }
+    else
+    {
         float terrain_height = 0.0f;
-        float surface_angle_xy = 0.0f;
-        float surface_angle_zy = 0.0f;
+        Vector3f norm = {0};
 
         terrain_get_stats(
                 camera.position.x, 
                 camera.position.z,
                 &terrain_height,
-                &surface_angle_xy,
-                &surface_angle_zy
+                &norm
         );
 
-        printf("Angles: xy %f, zy %f\n",surface_angle_xy, surface_angle_zy);
+        float slope = norm.y / sqrt(norm.x*norm.x + norm.z*norm.z);
+        float angle = atan(slope);// + PI_OVER_2;
+        float gravity_parallel = ACCEL_DUE_TO_GRAVITY*cos(angle);
 
-        // 3.
+        //printf("Height: %f, Normal: %f %f %f, Angle: %f deg, Grav: %f\n",terrain_height, ret_norm.x, ret_norm.y, ret_norm.z, 90 + DEG(angle), gravity_parallel);
+        printf("Grav: %f %f %f\n", gravity_parallel*norm.x, gravity_parallel*norm.y, gravity_parallel*norm.z);
 
-        // 4.
+        gravity.x = gravity_parallel*norm.x;
+        gravity.y = gravity_parallel*norm.y; 
+        gravity.z = gravity_parallel*norm.z; 
+        
+        user_force.x = target_dir.x;
+        user_force.y = gravity_parallel*sin(angle + PI_OVER_2);
+        user_force.z = target_dir.z;
+
+        normalize_v3f(&user_force);
+
+        user_force.x *= accel_factor;
+        user_force.y *= accel_factor;
+        user_force.z *= accel_factor;
+
+        friction.x = -coeff_friction_ground*user_force.x;
+        friction.y = -coeff_friction_ground*user_force.y;
+        friction.z = -coeff_friction_ground*user_force.z;
     }
-    else
-    {
-        // 5.
-    }
+
+    memset(&camera.accel, 0, sizeof(Vector3f));
+
+    camera.accel.x += gravity.x;
+    camera.accel.y += gravity.y;
+    camera.accel.z += gravity.z;
+
+    camera.accel.x += user_force.x;
+    camera.accel.y += user_force.y;
+    camera.accel.z += user_force.z;
+
+    camera.accel.x += friction.x;
+    camera.accel.y += friction.y;
+    camera.accel.z += friction.z;
 }
 
 static void camera_update_velocity()
 {
+    camera.velocity.x += camera.accel.x;
+    camera.velocity.y += camera.accel.y;
+    camera.velocity.z += camera.accel.z;
+}
 
-    //camera_update_accel(); // @TEMP
+static void camera_update_velocity2()
+{
 
     if(camera.mode == CAMERA_MODE_FOLLOW_PLAYER)
     {
         float terrain_height = 0.0f;
-        terrain_get_stats(camera.position.x, camera.position.z, &terrain_height, NULL, NULL);
+        Vector3f ret_norm;
+        terrain_get_stats(camera.position.x, camera.position.z, &terrain_height, &ret_norm);
 
         float margin_of_error = 0.05f;
 

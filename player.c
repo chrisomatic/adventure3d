@@ -17,6 +17,7 @@ void player_init()
     memset(&player,0,sizeof(Player));
 
     player.height = 1.5f + 1.4f; // meters
+    player.mass = 1.0f; // kg
 }
 
 void player_update()

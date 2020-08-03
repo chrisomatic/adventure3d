@@ -94,7 +94,7 @@ static bool get_terrain_points_and_pos(float x, float z, Vector3f* p1, Vector3f*
 
     if (x_coord <= (1.0f-z_coord))
     {
-        p1->x = 0; p1->y = terrain_heights[g*grid_x+grid_z];   p1->z = 0;
+        p1->x = 0; p1->y = terrain_heights[g*grid_x+grid_z];     p1->z = 0;
         p2->x = 1; p2->y = terrain_heights[(g*grid_x+1)+grid_z]; p2->z = 1;
         p3->x = 0; p3->y = terrain_heights[g*grid_x+(grid_z+1)]; p3->z = 1;
     }
@@ -114,7 +114,7 @@ static bool get_terrain_points_and_pos(float x, float z, Vector3f* p1, Vector3f*
     return true;
 }
 
-void terrain_get_stats(float x, float z, float* height, float* angle_xy, float* angle_zy)
+void terrain_get_stats(float x, float z, float* height, Vector3f* ret_norm)
 {
     Vector3f a  = {0};
     Vector3f b  = {0};
@@ -123,18 +123,16 @@ void terrain_get_stats(float x, float z, float* height, float* angle_xy, float* 
 
     bool res = get_terrain_points_and_pos(x,z,&a,&b,&c,&pos2);
 
-    *height = res ? barry_centric(a,b,c,pos2) : 0.0f;
-
-    if(angle_xy == NULL && angle_zy == NULL)
-        return;
-
-    float adj = terrain_scale * (1.0f / terrain_heights_width);
-
-    float xy = a.y - b.y;
-    float zy = c.y - b.y;
-
-    *angle_xy = DEG(atan(xy/adj));
-    *angle_zy = DEG(atan(zy/adj));
+    if(res)
+    {
+        *height = barry_centric(a,b,c,pos2);
+        get_normal_v3f(a,b,c,ret_norm);
+    }
+    else
+    {
+        *height = 0.0f;
+        memset(ret_norm,0,sizeof(Vector3f));
+    }
 }
 
 void terrain_build(const char* heightmap)
