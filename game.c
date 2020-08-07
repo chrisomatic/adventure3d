@@ -29,8 +29,6 @@
 // Global Vars
 // =========================
 
-GLuint vbo,ibo;
-
 Timer game_timer = {0};
 
 bool client_connected = false;
@@ -138,7 +136,6 @@ void start_game()
     }
 
     deinit();
-
 }
 
 void init()
@@ -160,11 +157,10 @@ void init()
     printf("GL version: %s\n",glGetString(GL_VERSION));
     
     glClearColor(0.15f, 0.15f, 0.15f, 0.0f);
+
     glFrontFace(GL_CW);
     glCullFace(GL_BACK);
     glEnable(GL_CULL_FACE);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
@@ -185,14 +181,13 @@ void init()
     printf("Building terrain.\n");
     terrain_build("textures/heightmap.png");
 
-    text_init();
     player_init();
     camera_init();
     transform_world_init();
     light_init();
     sky_init();
 
-    glUniform1i(sampler, 0);
+    text_init();
 
     // put pointer in center of window
     glfwSetCursorPos(window, camera.cursor.x, camera.cursor.y);
@@ -200,8 +195,6 @@ void init()
 
 void deinit()
 {
-    glDeleteBuffers(1, &vbo);
-
     shader_deinit();
     if(is_client)
         net_client_deinit();
@@ -324,45 +317,24 @@ void render()
     glClearDepth(1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    Matrix4f* _world;
-    Matrix4f* _wvp;
+#if 1
 
     terrain_render();
 
-    glUniform3f(dir_light_location.color, sunlight.base.color.x, sunlight.base.color.y, sunlight.base.color.z);
-    glUniform1f(dir_light_location.ambient_intensity, sunlight.base.ambient_intensity);
-    glUniform3f(dir_light_location.direction, sunlight.direction.x, sunlight.direction.y, sunlight.direction.z);
-    glUniform1f(dir_light_location.diffuse_intensity, sunlight.base.diffuse_intensity);
-
     if(camera.perspective == CAMERA_PERSPECTIVE_THIRD_PERSON || camera.mode == CAMERA_MODE_FREE)
     {
-        // render current player
-        world_set_scale(1.0f,1.0f,1.0f);
-        world_set_rotation(-player.angle_v+90.0f,-player.angle_h+90.0f,0.0f);
-        world_set_position(-player.position.x,-player.position.y,-player.position.z);
+        Vector3f pos      = {-player.position.x, -player.position.y, -player.position.z};
+        Vector3f rotation = {-player.angle_v+90.0f, -player.angle_h+90.0f, 0.0f};
+        Vector3f scale    = {1.0f, 1.0f, 1.0f};
 
-        _world = get_world_transform();
-        _wvp   = get_wvp_transform();
-
-        glUniformMatrix4fv(world_location,1,GL_TRUE,(const GLfloat*)_world);
-        glUniformMatrix4fv(wvp_location,1,GL_TRUE,(const GLfloat*)_wvp);
-
-        mesh_render(&obj);
+        mesh_render(&obj, pos, rotation, scale);
     }
 
     // objects
     for(int i = 0; i < num_other_players; ++i)
     {
-        world_set_scale(1.0f,1.0f,1.0f);
-
         float angle_v_interp = player_info[i].time_since_last_packet*(player_info[i].guessed_angle_v_vel);
         float angle_h_interp = player_info[i].time_since_last_packet*(player_info[i].guessed_angle_h_vel);
-
-        world_set_rotation(
-            -(player_info[i].current.angle_v + DEG(angle_v_interp))+90.0f,
-            -(player_info[i].current.angle_h + DEG(angle_h_interp))+90.0f,
-            0.0f
-        );
 
         Vector3f pos_interp = {
             player_info[i].time_since_last_packet*(player_info[i].guessed_velocity.x),
@@ -370,28 +342,35 @@ void render()
             player_info[i].time_since_last_packet*(player_info[i].guessed_velocity.z)
         };
 
-        //printf("Interp: P %f %f %f R %f %f\n",pos_interp.x, pos_interp.y, pos_interp.z, angle_h_interp, angle_v_interp);
+        player_info[i].time_since_last_packet += TARGET_SPF;
 
-        world_set_position(
+        Vector3f pos = {
             -(player_info[i].current.position.x + pos_interp.x),
             -(player_info[i].current.position.y + pos_interp.y),
             -(player_info[i].current.position.z + pos_interp.z)
-        );
+        };
+        Vector3f rotation = {
+            -(player_info[i].current.angle_v + DEG(angle_v_interp))+90.0f,
+            -(player_info[i].current.angle_h + DEG(angle_h_interp))+90.0f,
+            0.0f
+        };
 
-        player_info[i].time_since_last_packet += TARGET_SPF;
+        Vector3f scale    = {1.0f, 1.0f, 1.0f};
 
-        _world = get_world_transform();
-        _wvp   = get_wvp_transform();
-
-        glUniformMatrix4fv(world_location,1,GL_TRUE,(const GLfloat*)_world);
-        glUniformMatrix4fv(wvp_location,1,GL_TRUE,(const GLfloat*)_wvp);
-
-        mesh_render(&obj);
+        mesh_render(&obj, pos, rotation, scale);
     }
 
     sky_render();
 
-    text_print(10.0f,10.0f,"Hello!");
+#endif
+
+    Vector3f color = {1.0f,1.0f,1.0f};
+
+    text_print(10.0f,25.0f,"Adventure",color);
+
+    char text_num_players[16] = {0};
+    snprintf(text_num_players,16,"Player Count: %d",num_other_players+1);
+    text_print(10.0f,50.0f,text_num_players,color);
 
     glfwSwapBuffers(window);
 }

@@ -7,7 +7,10 @@
 
 #include "util.h"
 #include "math3d.h"
+#include "shader.h"
 #include "texture.h"
+#include "transform.h"
+#include "light.h"
 
 #include "mesh.h"
 
@@ -225,8 +228,29 @@ void mesh_load_model(ModelFormat format, const char* file_path, Mesh* mesh)
     //print_mesh(mesh);
 }
 
-void mesh_render(Mesh* mesh)
+void mesh_render(Mesh* mesh, Vector3f pos, Vector3f rotation, Vector3f scale)
 {
+    glUseProgram(program);
+    
+    // render current player
+    world_set_scale(scale.x,scale.y,scale.z);
+    world_set_rotation(rotation.x,rotation.y,rotation.z);
+    world_set_position(pos.x,pos.y,pos.z);
+
+    Matrix4f* world = get_world_transform();
+    Matrix4f* wvp = get_wvp_transform();
+
+    glUniformMatrix4fv(world_location,1,GL_TRUE,(const GLfloat*)world);
+    glUniformMatrix4fv(wvp_location,1,GL_TRUE,(const GLfloat*)wvp);
+
+    glUniform1i(sampler, 0);
+    glUniform1i(wireframe_location, show_wireframe);
+
+    glUniform3f(dir_light_location.color, sunlight.base.color.x, sunlight.base.color.y, sunlight.base.color.z);
+    glUniform1f(dir_light_location.ambient_intensity, sunlight.base.ambient_intensity);
+    glUniform3f(dir_light_location.direction, sunlight.direction.x, sunlight.direction.y, sunlight.direction.z);
+    glUniform1f(dir_light_location.diffuse_intensity, sunlight.base.diffuse_intensity);
+
     glBindVertexArray(mesh->vao);
 
     glEnableVertexAttribArray(0);
@@ -251,6 +275,7 @@ void mesh_render(Mesh* mesh)
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(2);
 
+    glUseProgram(0);
     texture_unbind();
 }
 

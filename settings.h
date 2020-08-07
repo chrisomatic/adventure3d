@@ -10,8 +10,8 @@
 #define TARGET_FPS     60.0f
 #define TARGET_SPF     (1.0f/TARGET_FPS) // seconds per frame
 
-#define FOV      96.0f 
-#define Z_NEAR    0.1f
+#define FOV       96.0f 
+#define Z_NEAR    0.01f
 #define Z_FAR   1000.0f
 
 extern int view_width;

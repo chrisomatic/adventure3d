@@ -39,4 +39,4 @@ extern Mesh obj;
 
 void mesh_init_all();
 void mesh_load_model(ModelFormat format, const char* file_path, Mesh* mesh);
-void mesh_render(Mesh* mesh);
+void mesh_render(Mesh* mesh, Vector3f pos, Vector3f rotation, Vector3f scale);

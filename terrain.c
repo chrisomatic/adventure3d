@@ -16,10 +16,13 @@
 #include "transform.h"
 #include "mesh.h"
 #include "net.h"
+#include "light.h"
 
 #define TERRAIN_SCALE_FACTOR 2.0f
 
 Mesh terrain = {0};
+
+GLuint texture_terrain = {0};
 
 static float* terrain_heights;
 static int terrain_heights_width;
@@ -38,11 +41,18 @@ void terrain_render()
     Matrix4f* world = get_world_transform();
     Matrix4f* wvp   = get_wvp_transform();
 
-    shader_set_mat4(program, "world", world);
-    shader_set_mat4(program, "wvp", wvp);
+    glUniformMatrix4fv(world_location,1,GL_TRUE,(const GLfloat*)world);
+    glUniformMatrix4fv(wvp_location,1,GL_TRUE,(const GLfloat*)wvp);
 
+    glUniform1i(sampler, 0);
     glUniform1i(wireframe_location, show_wireframe);
-    glUniform3f(camera_position_location, camera.position.x,camera.position.y,camera.position.z);
+
+    glUniform3f(dir_light_location.color, sunlight.base.color.x, sunlight.base.color.y, sunlight.base.color.z);
+    glUniform1f(dir_light_location.ambient_intensity, sunlight.base.ambient_intensity);
+    glUniform3f(dir_light_location.direction, sunlight.direction.x, sunlight.direction.y, sunlight.direction.z);
+    glUniform1f(dir_light_location.diffuse_intensity, sunlight.base.diffuse_intensity);
+
+    texture_bind(&texture_terrain,GL_TEXTURE0);
 
     glBindVertexArray(terrain.vao);
     glEnableVertexAttribArray(0);
@@ -55,9 +65,6 @@ void terrain_render()
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)20);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,terrain.ibo);
 
-    if(terrain.mat.texture)
-        texture_bind(&terrain.mat.texture,GL_TEXTURE0);
-
     if(show_wireframe)
         glDrawElements(GL_LINES, terrain.num_indices, GL_UNSIGNED_INT, 0);
     else
@@ -68,6 +75,7 @@ void terrain_render()
     glDisableVertexAttribArray(2);
 
     texture_unbind();
+    glUseProgram(0);
 }
 
 static bool get_terrain_points_and_pos(float x, float z, Vector3f* p1, Vector3f* p2, Vector3f* p3, Vector2f* pos)
@@ -137,6 +145,8 @@ void terrain_get_stats(float x, float z, float* height, Vector3f* ret_norm)
 
 void terrain_build(const char* heightmap)
 {
+    texture_load2d(&texture_terrain,"textures/grass.png");
+
     glGenVertexArrays(1, &terrain.vao);
     glBindVertexArray(terrain.vao);
 
@@ -228,8 +238,6 @@ void terrain_build(const char* heightmap)
     glGenBuffers(1,&terrain.ibo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, terrain.ibo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, terrain.num_indices*sizeof(u32), terrain.indices, GL_STATIC_DRAW);
-
-    memcpy(&terrain.mat.texture,&texture1,sizeof(GLuint));
 
     free(terrain_vertices);
     free(terrain_indices);

@@ -4,6 +4,7 @@ typedef struct
 {
     float height;
     float mass;
+    float accel_factor;
 
     Vector3f accel;
     Vector3f velocity;

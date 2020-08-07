@@ -89,4 +89,5 @@ void sky_render()
     glDrawElements(GL_TRIANGLES, sizeof(sky_indices), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
     glDepthFunc(GL_LESS);
+    glUseProgram(0);
 }

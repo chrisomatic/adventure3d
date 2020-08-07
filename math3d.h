@@ -1,11 +1,14 @@
 #pragma once
 
-#define PI        3.14159265358979323
-#define PI_OVER_2 PI / 2.0f
+#define PI        3.14159265358f
+#define PI_OVER_2 1.57079632679f
 
 #define RAD(x) (((x) * PI) / 180.0f)
 #define DEG(x) (((x) * 180.0f) / PI)
 #define ABS(x) ((x) < 0 ? -1*(x) : (x))
+
+#define MIN(x,y) ((x) < (y) ? (x) : (y))
+#define MAX(x,y) ((x) > (y) ? (x) : (y))
 
 #define COUNT_OF(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
 

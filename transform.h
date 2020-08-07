@@ -19,3 +19,5 @@ Matrix4f* get_vp_transform();
 void world_set_position(float x, float y, float z);
 void world_set_rotation(float x, float y, float z);
 void world_set_scale(float x, float y, float z);
+
+void get_ortho_transform(Matrix4f* m, float left, float right, float bottom, float top);

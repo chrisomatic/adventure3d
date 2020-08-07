@@ -9,11 +9,10 @@
 #include "util.h"
 #include "texture.h"
 
-GLuint texture1     = {0};
 GLuint texture2     = {0};
 GLuint texture_cube = {0};
 
-static bool texture_load2d(GLuint* t, const char* filepath)
+bool texture_load2d(GLuint* t, const char* filepath)
 {
     int x,y,n;
     unsigned char* data;  
@@ -99,7 +98,6 @@ void texture_unbind()
 
 void texture_load_all()
 {
-    texture_load2d(&texture1,"textures/grass.png");
     texture_load2d(&texture2,"textures/donut.png");
 
 #if 0
