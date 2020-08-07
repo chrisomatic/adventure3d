@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#define STR_EQUAL(x,y) (strcmp((x), (y)) == 0)
+
 typedef uint8_t   u8;
 typedef int8_t    s8;
 typedef uint16_t u16;

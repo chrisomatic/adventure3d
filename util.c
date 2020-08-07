@@ -5,6 +5,9 @@
 int read_file(const char* filepath, char* ret_buf, u32 max_buffer_size)
 {
     FILE* fp = fopen(filepath,"r");
+    
+    if(!fp)
+        return -1;
 
     int c;
     int i = 0;

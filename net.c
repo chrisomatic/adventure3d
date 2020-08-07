@@ -260,7 +260,7 @@ int net_server_start()
                 memcpy(&world_state.client_data[client_id],recv_packet.data,recv_packet.data_len);
 
                 ClientData* c = (ClientData*)&world_state.client_data[client_id];
-                printf("Client %u: P %f %f %f R %f %f\n",client_id,c->position.x,c->position.y,c->position.z,c->angle_h,c->angle_v);
+                printf("Client %u:N %s P %f %f %f R %f %f\n",client_id,c->name,c->position.x,c->position.y,c->position.z,c->angle_h,c->angle_v);
             }
 
             timer_delay_us(10); // delay 10 us

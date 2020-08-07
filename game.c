@@ -44,6 +44,7 @@ typedef struct
 
 typedef struct
 {
+    char player_name[16];
     PlayerDataPoint prior;
     PlayerDataPoint current;
     
@@ -221,6 +222,22 @@ void simulate()
     {
         ClientData p =
         {
+            player.name[0],
+            player.name[1],
+            player.name[2],
+            player.name[3],
+            player.name[4],
+            player.name[5],
+            player.name[6],
+            player.name[7],
+            player.name[8],
+            player.name[9],
+            player.name[10],
+            player.name[11],
+            player.name[12],
+            player.name[13],
+            player.name[14],
+            player.name[15],
             {
                 player.position.x,
                 player.position.y,
@@ -273,6 +290,8 @@ void simulate()
                     c->position.z    = ws->client_data[i].position.z;
                     c->angle_h       = ws->client_data[i].angle_h;
                     c->angle_v       = ws->client_data[i].angle_v;
+
+                    strncpy(player_info[player_index].player_name,ws->client_data[i].name,16);
 
                     player_info[player_index].time_since_last_packet = 0.0f;
 
@@ -371,6 +390,14 @@ void render()
     char text_num_players[16] = {0};
     snprintf(text_num_players,16,"Player Count: %d",num_other_players+1);
     text_print(10.0f,50.0f,text_num_players,color);
+
+    color.x = 0.2f; color.y = 0.2f; color.z = 0.75f;
+    text_print(10.0f,75.0f,player.name,color);
+
+    for(int i = 0; i < num_other_players;++i)
+    {
+        text_print(10.0f,100.0f+(i*25),player_info[i].player_name,color);
+    }
 
     glfwSwapBuffers(window);
 }

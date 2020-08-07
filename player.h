@@ -2,6 +2,10 @@
 
 typedef struct
 {
+    char name[16];
+
+    Vector3f color;
+
     float height;
     float mass;
     float accel_factor;
