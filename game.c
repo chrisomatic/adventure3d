@@ -24,6 +24,7 @@
 #include "net.h"
 #include "text.h"
 #include "timer.h"
+#include "phys.h"
 
 // =========================
 // Global Vars
@@ -53,6 +54,7 @@ typedef struct
     Vector3f guessed_velocity;
     float guessed_angle_h_vel;
     float guessed_angle_v_vel;
+    bool highlighted;
 } PlayerInfo;
 
 PlayerInfo player_info[MAX_CLIENTS] = {0};
@@ -329,6 +331,26 @@ void simulate()
             }
         }
     }
+
+    for(int i = 0; i < num_other_players; ++i)
+    {
+        Vector3f p1,p2;
+
+        p1.x = camera.position.x;
+        p1.y = camera.position.y;
+        p1.z = camera.position.z;
+
+        float view_distance = 10.0f;
+
+        p2.x = camera.position.x + view_distance*camera.target.x;
+        p2.y = camera.position.y + view_distance*camera.target.y;
+        p2.z = camera.position.z + view_distance*camera.target.z;
+
+        if(phys_collision_line_sphere(p1,p2,player_info[i].current.position,2.0f))
+            player_info[i].highlighted = true;
+        else
+            player_info[i].highlighted = false;
+    }
 }
 
 void render()
@@ -385,19 +407,26 @@ void render()
 
     Vector3f color = {1.0f,1.0f,1.0f};
 
-    text_print(10.0f,25.0f,"Adventure",color);
+    //text_print(10.0f,25.0f,"Adventure",color);
 
     char text_num_players[16] = {0};
     snprintf(text_num_players,16,"Player Count: %d",num_other_players+1);
-    text_print(10.0f,50.0f,text_num_players,color);
+    text_print(10.0f,25.0f,text_num_players,color);
 
-    color.x = 0.2f; color.y = 0.2f; color.z = 0.75f;
-    text_print(10.0f,75.0f,player.name,color);
+    color.x = 0.60f; color.y = 0.00f; color.z = 0.60f;
+    text_print(10.0f,50.0f,player.name,color);
 
+    color.x = 0.0f; color.y = 1.0f; color.z = 1.0f;
     for(int i = 0; i < num_other_players;++i)
     {
-        text_print(10.0f,100.0f+(i*25),player_info[i].player_name,color);
+        if(player_info[i].highlighted)
+            text_print(view_width/2.0f - 75.0f,view_height - 30.0f,player_info[i].player_name,color);
     }
+
+    // reticule
+    color.x = 1.0f; color.y = 1.0f; color.z = 1.0f;
+    text_print(view_width/2.0f-1,view_height/2.0f,".",color);
+
 
     glfwSwapBuffers(window);
 }

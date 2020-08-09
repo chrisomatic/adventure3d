@@ -16,5 +16,6 @@ gcc game.c \
     net.c \
     timer.c \
     text.c \
+    phys.c \
     -lglfw -lGLU -lGLEW -lGL -lm \
     -o adventure
