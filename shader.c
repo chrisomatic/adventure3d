@@ -23,6 +23,11 @@ static void shader_add(GLuint program, GLenum shader_type, const char* shader_fi
 
 void shader_load_all()
 {
+    GLuint vao;
+
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
     shader_build_program(&program,
         "shaders/basic.vert.glsl",
         "shaders/basic.frag.glsl"

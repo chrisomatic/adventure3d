@@ -4,6 +4,7 @@
 #include <string.h>
 #include <errno.h> 
 #include <time.h>
+#include <sys/select.h>
 
 #include "socket.h"
 #include "util.h"

@@ -48,6 +48,6 @@ void main()
         //if(opacity > 0.25 && opacity < 1.0)
         //    diffuse_color = vec4(1.0,0.0,0.0,0.0);
 
-        frag_color = texture2D(sampler, tex_coord0.xy) * (ambient_color + diffuse_color); //* vec4(1.0, 1.0, 1.0, 1.0 - opacity);
+        frag_color = texture(sampler, tex_coord0.xy) * (ambient_color + diffuse_color); //* vec4(1.0, 1.0, 1.0, 1.0 - opacity);
     }
-};
+}

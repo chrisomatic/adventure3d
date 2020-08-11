@@ -18,4 +18,4 @@ void main()
 
     gl_Position = wvp * vec4(position, 1.0);
     normal0 = (world * vec4(normal, 0.0)).xyz;
-};
+}
