@@ -1,3 +1,5 @@
 adventure
 release.7z
 player.props
+windows/.vs/*
+windows/*.db
