@@ -5,10 +5,17 @@
 #define MAX_CLIENTS 8
 #define MAX_PACKET_DATA_SIZE 1024
 
+typedef enum
+{
+    PACKET_TYPE_INIT,
+    PACKET_TYPE_WORLD_STATE
+} PacketType;
+
 typedef struct
 {
     u32 game_id;
     u16 packet_id;
+    PacketType type;
     u16 ack;
     u32 ack_bitfield;
 } PacketHeader;

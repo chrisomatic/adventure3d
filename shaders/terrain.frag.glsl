@@ -16,6 +16,7 @@ struct DirectionalLight
 };
 
 uniform DirectionalLight dl;
+uniform sampler2D sampler;
 uniform int wireframe;
 uniform vec3 camera_position;
 
@@ -23,7 +24,7 @@ void main()
 {
     if(wireframe == 1)
     {
-        frag_color = vec4(0.7f,0.2f,0.2f,1.0f);
+        frag_color = vec4(0.2f,1.0f,0.2f,1.0f);
     }
     else
     {
@@ -47,6 +48,6 @@ void main()
         //if(opacity > 0.25 && opacity < 1.0)
         //    diffuse_color = vec4(1.0,0.0,0.0,0.0);
 
-        frag_color = (ambient_color + diffuse_color); //* vec4(1.0, 1.0, 1.0, 1.0 - opacity);
+        frag_color = texture(sampler, tex_coord0.xy) * (ambient_color + diffuse_color); //* vec4(1.0, 1.0, 1.0, 1.0 - opacity);
     }
 }

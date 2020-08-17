@@ -25,6 +25,7 @@
 #include "text.h"
 #include "timer.h"
 #include "phys.h"
+#include "sphere.h"
 
 // =========================
 // Global Vars
@@ -141,6 +142,8 @@ void start_game()
     deinit();
 }
 
+Sphere my_sphere = {0};
+
 void init()
 {
     bool success;
@@ -191,6 +194,8 @@ void init()
     sky_init();
 
     text_init();
+
+    sphere_create(1,100.0f,&my_sphere);
 
     // put pointer in center of window
     glfwSetCursorPos(window, camera.cursor.x, camera.cursor.y);
@@ -358,8 +363,6 @@ void render()
     glClearDepth(1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-#if 1
-
     terrain_render();
 
     if(camera.perspective == CAMERA_PERSPECTIVE_THIRD_PERSON || camera.mode == CAMERA_MODE_FREE)
@@ -401,9 +404,14 @@ void render()
         mesh_render(&obj, pos, rotation, scale);
     }
 
-    sky_render();
+    // sphere
+    my_sphere.pos.x = 0.0f;my_sphere.pos.y = -20.0f;my_sphere.pos.z = 0.0f;
+    my_sphere.rotation.x = 0.0f;my_sphere.rotation.y = 0.0f;my_sphere.rotation.z = 0.0f;
+    my_sphere.scale.x = 2.0f;my_sphere.scale.y = 2.0f;my_sphere.scale.z = 2.0f;
+    
+    sphere_render(&my_sphere);
 
-#endif
+    sky_render();
 
     Vector3f color = {1.0f,1.0f,1.0f};
 

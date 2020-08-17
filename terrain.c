@@ -24,6 +24,8 @@ Mesh terrain = {0};
 
 GLuint texture_terrain = {0};
 
+static GLuint terrain_program;
+
 static float* terrain_heights;
 static int terrain_heights_width;
 
@@ -32,7 +34,7 @@ static float terrain_pos;
 
 void terrain_render()
 {
-    glUseProgram(program);
+    glUseProgram(terrain_program);
 
     world_set_scale(terrain_scale,1.0f,terrain_scale);
     world_set_rotation(0.0f,0.0f,0.0f);
@@ -41,16 +43,27 @@ void terrain_render()
     Matrix4f* world = get_world_transform();
     Matrix4f* wvp   = get_wvp_transform();
 
+    shader_set_mat4(terrain_program,"world",world);
+    shader_set_mat4(terrain_program,"wvp",wvp);
+
+    shader_set_int(terrain_program,"wireframe",show_wireframe);
+
+    shader_set_float(terrain_program,"dl.ambient_intensity",sunlight.base.ambient_intensity);
+    shader_set_float(terrain_program,"dl.diffuse_intensity",sunlight.base.diffuse_intensity);
+    shader_set_vec3(terrain_program,"dl.color",sunlight.base.color.x, sunlight.base.color.y,sunlight.base.color.z);
+    shader_set_vec3(terrain_program,"dl.direction",sunlight.direction.x,sunlight.direction.y,sunlight.direction.z);
+
+    /*
     glUniformMatrix4fv(world_location,1,GL_TRUE,(const GLfloat*)world);
     glUniformMatrix4fv(wvp_location,1,GL_TRUE,(const GLfloat*)wvp);
 
-    glUniform1i(sampler, 0);
     glUniform1i(wireframe_location, show_wireframe);
 
     glUniform3f(dir_light_location.color, sunlight.base.color.x, sunlight.base.color.y, sunlight.base.color.z);
     glUniform1f(dir_light_location.ambient_intensity, sunlight.base.ambient_intensity);
     glUniform3f(dir_light_location.direction, sunlight.direction.x, sunlight.direction.y, sunlight.direction.z);
     glUniform1f(dir_light_location.diffuse_intensity, sunlight.base.diffuse_intensity);
+    */
 
     texture_bind(&texture_terrain,GL_TEXTURE0);
 
@@ -145,6 +158,12 @@ void terrain_get_stats(float x, float z, float* height, Vector3f* ret_norm)
 
 void terrain_build(const char* heightmap)
 {
+
+    shader_build_program(&terrain_program,
+        "shaders/terrain.vert.glsl",
+        "shaders/terrain.frag.glsl"
+    );
+
     texture_load2d(&texture_terrain,"textures/grass.png");
 
     glGenVertexArrays(1, &terrain.vao);

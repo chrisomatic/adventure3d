@@ -85,6 +85,7 @@ static void print_packet(Packet* pkt)
 {
     printf("Game ID:      0x%08x\n",pkt->header.game_id);
     printf("Packet ID:    %u\n",pkt->header.packet_id);
+    printf("Packet Type:  %u\n",pkt->header.type);
     printf("Ack:          %u\n",pkt->header.ack);
     printf("Ack Bitfield: %u\n",pkt->header.ack_bitfield);
     printf("Data Len:     %u\n",pkt->data_len);
@@ -297,6 +298,7 @@ int net_server_start()
                 Packet send_packet = {
                     .header.game_id = game_id,
                     .header.packet_id = server_info.local_latest_packet_id,
+                    .header.type = PACKET_TYPE_WORLD_STATE,
                     .header.ack = server_clients[i].remote_latest_packet_id,
                     .header.ack_bitfield = get_ack_bit_field(&server_info)
                 };
