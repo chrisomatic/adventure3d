@@ -31,8 +31,12 @@ const Vertex base_vertices[] =
 const u32 base_indices[] =
 {
     4,1,0,
+    4,1,0,
+    4,2,1,
     4,2,1,
     4,3,2,
+    4,3,2,
+    4,0,3,
     4,0,3,
     5,0,1,
     5,1,2,

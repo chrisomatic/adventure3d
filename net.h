@@ -30,7 +30,6 @@ typedef struct
 
 typedef struct
 {
-    char name[16];
     Vector3f position;
     float angle_h;
     float angle_v;

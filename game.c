@@ -229,22 +229,6 @@ void simulate()
     {
         ClientData p =
         {
-            player.name[0],
-            player.name[1],
-            player.name[2],
-            player.name[3],
-            player.name[4],
-            player.name[5],
-            player.name[6],
-            player.name[7],
-            player.name[8],
-            player.name[9],
-            player.name[10],
-            player.name[11],
-            player.name[12],
-            player.name[13],
-            player.name[14],
-            player.name[15],
             {
                 player.position.x,
                 player.position.y,
@@ -298,7 +282,7 @@ void simulate()
                     c->angle_h       = ws->client_data[i].angle_h;
                     c->angle_v       = ws->client_data[i].angle_v;
 
-                    strncpy(player_info[player_index].player_name,ws->client_data[i].name,16);
+                    //strncpy(player_info[player_index].player_name,ws->client_data[i].name,16);
 
                     player_info[player_index].time_since_last_packet = 0.0f;
 
