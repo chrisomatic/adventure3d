@@ -18,5 +18,6 @@ gcc game.c \
     text.c \
     phys.c \
     sphere.c \
+    menu.c \
     -lglfw -lGLU -lGLEW -lGL -lm \
     -o adventure

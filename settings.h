@@ -1,5 +1,7 @@
 #pragma once
 
+#include "menu.h"
+
 #define STARTING_VIEW_WIDTH   1366
 #define STARTING_VIEW_HEIGHT  768
 
@@ -14,5 +16,11 @@
 #define Z_NEAR    0.01f
 #define Z_FAR   1000.0f
 
+void update_title_screen();
+void update_title_screen_pressed();
+void update_title_screen_highlights(double xpos, double ypos);
+
 extern int view_width;
 extern int view_height;
+
+extern int is_title_screen;

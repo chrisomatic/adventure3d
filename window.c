@@ -53,8 +53,6 @@ bool window_init()
     glfwSetCursorPosCallback(window, cursor_position_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
     glfwMakeContextCurrent(window);
 
     printf("Initializing GLEW.\n");
@@ -86,22 +84,46 @@ static void window_size_callback(GLFWwindow* window, int window_width, int windo
     int start_y = (window_height + view_height) / 2.0f - view_height;
 
     glViewport(start_x,start_y,view_width,view_height);
+
+    if(is_title_screen)
+    {
+        update_title_screen();
+    }
 }
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
-    int mode = glfwGetInputMode(window,GLFW_CURSOR);
-    if(mode == GLFW_CURSOR_DISABLED)
-        camera_update_angle(xpos, ypos);
+    if(is_title_screen)
+    {
+        update_title_screen_highlights(xpos,ypos);
+    }
+    else
+    {
+        int mode = glfwGetInputMode(window,GLFW_CURSOR);
+        if(mode == GLFW_CURSOR_DISABLED)
+            camera_update_angle(xpos, ypos);
+
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+        // put pointer in center of window
+        glfwSetCursorPos(window, camera.cursor.x, camera.cursor.y);
+    }
 }
 
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
     {
-        int mode = glfwGetInputMode(window,GLFW_CURSOR);
-        if(mode == GLFW_CURSOR_NORMAL)
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        if(is_title_screen)
+        {
+            update_title_screen_pressed();
+        }
+        else
+        {
+            int mode = glfwGetInputMode(window,GLFW_CURSOR);
+            if(mode == GLFW_CURSOR_NORMAL)
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
     }
 }
 

@@ -26,6 +26,7 @@
 #include "timer.h"
 #include "phys.h"
 #include "sphere.h"
+#include "menu.h"
 
 // =========================
 // Global Vars
@@ -33,6 +34,7 @@
 
 Timer game_timer = {0};
 
+int is_title_screen = true;
 bool client_connected = false;
 bool is_client = false;
 
@@ -60,6 +62,8 @@ typedef struct
 
 PlayerInfo player_info[MAX_CLIENTS] = {0};
 int num_other_players = 0;
+
+MenuItemList title_screen = {0};
 
 // =========================
 // Function Prototypes
@@ -142,6 +146,64 @@ void start_game()
     deinit();
 }
 
+static void start_local_game()
+{
+    is_title_screen = false;
+    is_client = false;
+}
+
+static void join_public_server()
+{
+    is_title_screen = false;
+    is_client = true;
+}
+
+static void exit_game()
+{
+    glfwSetWindowShouldClose(window,1);
+}
+
+void update_title_screen()
+{
+    menu_clear_all(&title_screen);
+
+    float start_x = view_width/2.0f;
+    float start_y = view_height / 2.0f - 100.0f;
+
+    menu_add_item2(&title_screen,start_x-80.0f,start_y-100.0f,160.0f,25.0f,"ADVENTURE",0,NULL);
+
+    menu_add_item2(&title_screen,start_x-100.0f,start_y,200.0f,25.0f,"Start Local Game",1, &start_local_game);
+    menu_add_item2(&title_screen,start_x-100.0f,start_y+30.0f,200.0f,25.0f,"Join Public Server",1, &join_public_server);
+    menu_add_item2(&title_screen,start_x-50.0f,start_y+60.0f,100.0f,25.0f,"Exit",1, &exit_game);
+}
+
+void update_title_screen_pressed()
+{
+    for(int i = 0; i < title_screen.count; ++i)
+    {
+        if(title_screen.items[i].is_highlighted)
+        {
+            (*title_screen.items[i].fn)();
+        }
+    }
+}
+
+void update_title_screen_highlights(double xpos, double ypos)
+{
+    for(int i = 0; i < title_screen.count; ++i)
+    {
+        title_screen.items[i].is_highlighted = 0;
+        if(title_screen.items[i].is_interactive)
+        {
+            if(xpos >= title_screen.items[i].x && xpos <= title_screen.items[i].x + title_screen.items[i].w &&
+               ypos >= title_screen.items[i].y-title_screen.items[i].h && ypos <= title_screen.items[i].y) 
+            {
+                title_screen.items[i].is_highlighted = 1;
+            }
+        }
+    }
+}
+
 Sphere my_sphere = {0};
 
 void init()
@@ -192,13 +254,11 @@ void init()
     transform_world_init();
     light_init();
     sky_init();
-
     text_init();
 
     sphere_create(1,100.0f,&my_sphere);
 
-    // put pointer in center of window
-    glfwSetCursorPos(window, camera.cursor.x, camera.cursor.y);
+    menu_init(6,&title_screen);
 }
 
 void deinit()
@@ -211,10 +271,12 @@ void deinit()
 
 void simulate()
 {
+    if(is_title_screen)
+        return;
+
     world.time += TARGET_SPF;
 
     //printf("\ntime: %f\n",world.time);
-
     camera_update();
     player_update();
 
@@ -347,78 +409,87 @@ void render()
     glClearDepth(1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    terrain_render();
-
-    if(camera.perspective == CAMERA_PERSPECTIVE_THIRD_PERSON || camera.mode == CAMERA_MODE_FREE)
+    if(is_title_screen)
     {
-        Vector3f pos      = {-player.position.x, -player.position.y, -player.position.z};
-        Vector3f rotation = {-player.angle_v+90.0f, -player.angle_h+90.0f, 0.0f};
-        Vector3f scale    = {1.0f, 1.0f, 1.0f};
-
-        mesh_render(&obj, pos, rotation, scale);
+        menu_render(&title_screen);
     }
-
-    // objects
-    for(int i = 0; i < num_other_players; ++i)
+    else
     {
-        float angle_v_interp = player_info[i].time_since_last_packet*(player_info[i].guessed_angle_v_vel);
-        float angle_h_interp = player_info[i].time_since_last_packet*(player_info[i].guessed_angle_h_vel);
+        terrain_render();
 
-        Vector3f pos_interp = {
-            player_info[i].time_since_last_packet*(player_info[i].guessed_velocity.x),
-            player_info[i].time_since_last_packet*(player_info[i].guessed_velocity.y),
-            player_info[i].time_since_last_packet*(player_info[i].guessed_velocity.z)
-        };
+        if(camera.perspective == CAMERA_PERSPECTIVE_THIRD_PERSON || camera.mode == CAMERA_MODE_FREE)
+        {
+            Vector3f pos      = {-player.position.x, -player.position.y, -player.position.z};
+            Vector3f rotation = {-player.angle_v+90.0f, -player.angle_h+90.0f, 0.0f};
+            Vector3f scale    = {1.0f, 1.0f, 1.0f};
 
-        player_info[i].time_since_last_packet += TARGET_SPF;
+            mesh_render(&obj, pos, rotation, scale);
+        }
 
-        Vector3f pos = {
-            -(player_info[i].current.position.x + pos_interp.x),
-            -(player_info[i].current.position.y + pos_interp.y),
-            -(player_info[i].current.position.z + pos_interp.z)
-        };
-        Vector3f rotation = {
-            -(player_info[i].current.angle_v + DEG(angle_v_interp))+90.0f,
-            -(player_info[i].current.angle_h + DEG(angle_h_interp))+90.0f,
-            0.0f
-        };
+        // objects
+        for(int i = 0; i < num_other_players; ++i)
+        {
+            float angle_v_interp = player_info[i].time_since_last_packet*(player_info[i].guessed_angle_v_vel);
+            float angle_h_interp = player_info[i].time_since_last_packet*(player_info[i].guessed_angle_h_vel);
 
-        Vector3f scale    = {1.0f, 1.0f, 1.0f};
+            Vector3f pos_interp = {
+                player_info[i].time_since_last_packet*(player_info[i].guessed_velocity.x),
+                player_info[i].time_since_last_packet*(player_info[i].guessed_velocity.y),
+                player_info[i].time_since_last_packet*(player_info[i].guessed_velocity.z)
+            };
 
-        mesh_render(&obj, pos, rotation, scale);
+            player_info[i].time_since_last_packet += TARGET_SPF;
+
+            Vector3f pos = {
+                -(player_info[i].current.position.x + pos_interp.x),
+                -(player_info[i].current.position.y + pos_interp.y),
+                -(player_info[i].current.position.z + pos_interp.z)
+            };
+            Vector3f rotation = {
+                -(player_info[i].current.angle_v + DEG(angle_v_interp))+90.0f,
+                -(player_info[i].current.angle_h + DEG(angle_h_interp))+90.0f,
+                0.0f
+            };
+
+            Vector3f scale    = {1.0f, 1.0f, 1.0f};
+
+            mesh_render(&obj, pos, rotation, scale);
+        }
+
+        // sphere
+        my_sphere.pos.x = 0.0f;my_sphere.pos.y = -20.0f;my_sphere.pos.z = 0.0f;
+        my_sphere.rotation.x = 0.0f;my_sphere.rotation.y = 0.0f;my_sphere.rotation.z = 0.0f;
+        my_sphere.scale.x = 2.0f;my_sphere.scale.y = 2.0f;my_sphere.scale.z = 2.0f;
+        
+        sphere_render(&my_sphere);
+
+        sky_render();
+
+        Vector3f color = {1.0f,1.0f,1.0f};
+
+        if(is_client)
+            text_print(10.0f,25.0f,"Connected to Server",color);
+        else
+            text_print(10.0f,25.0f,"Local Game",color);
+
+        char text_num_players[16] = {0};
+        snprintf(text_num_players,16,"Player Count: %d",num_other_players+1);
+        text_print(10.0f,50.0f,text_num_players,color);
+
+        color.x = 0.60f; color.y = 0.00f; color.z = 0.60f;
+        text_print(10.0f,100.0f,player.name,color);
+
+        color.x = 0.0f; color.y = 1.0f; color.z = 1.0f;
+        for(int i = 0; i < num_other_players;++i)
+        {
+            if(player_info[i].highlighted)
+                text_print(view_width/2.0f - 75.0f,view_height - 30.0f,player_info[i].player_name,color);
+        }
+
+        // reticule
+        color.x = 1.0f; color.y = 1.0f; color.z = 1.0f;
+        text_print(view_width/2.0f-1,view_height/2.0f,".",color);
     }
-
-    // sphere
-    my_sphere.pos.x = 0.0f;my_sphere.pos.y = -20.0f;my_sphere.pos.z = 0.0f;
-    my_sphere.rotation.x = 0.0f;my_sphere.rotation.y = 0.0f;my_sphere.rotation.z = 0.0f;
-    my_sphere.scale.x = 2.0f;my_sphere.scale.y = 2.0f;my_sphere.scale.z = 2.0f;
-    
-    sphere_render(&my_sphere);
-
-    sky_render();
-
-    Vector3f color = {1.0f,1.0f,1.0f};
-
-    //text_print(10.0f,25.0f,"Adventure",color);
-
-    char text_num_players[16] = {0};
-    snprintf(text_num_players,16,"Player Count: %d",num_other_players+1);
-    text_print(10.0f,25.0f,text_num_players,color);
-
-    color.x = 0.60f; color.y = 0.00f; color.z = 0.60f;
-    text_print(10.0f,50.0f,player.name,color);
-
-    color.x = 0.0f; color.y = 1.0f; color.z = 1.0f;
-    for(int i = 0; i < num_other_players;++i)
-    {
-        if(player_info[i].highlighted)
-            text_print(view_width/2.0f - 75.0f,view_height - 30.0f,player_info[i].player_name,color);
-    }
-
-    // reticule
-    color.x = 1.0f; color.y = 1.0f; color.z = 1.0f;
-    text_print(view_width/2.0f-1,view_height/2.0f,".",color);
-
 
     glfwSwapBuffers(window);
 }
