@@ -256,7 +256,7 @@ void init()
     sky_init();
     text_init();
 
-    sphere_create(3,1.0f,&my_sphere);
+    sphere_create(2,1.0f,&my_sphere);
 
     menu_init(6,&title_screen);
 }
