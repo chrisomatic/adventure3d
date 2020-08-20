@@ -1,6 +1,5 @@
 #version 330 core
 
-in vec4 color;
 in vec2 tex_coord0;
 in vec3 normal0;
 in vec3 vertex_position;
@@ -18,6 +17,7 @@ struct DirectionalLight
 uniform DirectionalLight dl;
 uniform int wireframe;
 uniform vec3 camera_position;
+uniform vec3 base_color;
 
 void main()
 {
@@ -47,6 +47,6 @@ void main()
         //if(opacity > 0.25 && opacity < 1.0)
         //    diffuse_color = vec4(1.0,0.0,0.0,0.0);
 
-        frag_color = (ambient_color + diffuse_color); //* vec4(1.0, 1.0, 1.0, 1.0 - opacity);
+        frag_color = vec4(base_color,1.0) * (ambient_color + diffuse_color); //* vec4(1.0, 1.0, 1.0, 1.0 - opacity);
     }
 }

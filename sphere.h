@@ -19,4 +19,4 @@ typedef struct
 
 
 bool sphere_create(u32 num_subdivisions,float radius, Sphere* s);
-void sphere_render(Sphere* s);
+void sphere_render(Sphere* s, Vector3f color);

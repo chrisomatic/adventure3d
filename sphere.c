@@ -21,10 +21,10 @@
 // platonic solid
 const Vertex base_vertices[] = 
 {
-    {{-0.5f,+0.0f,-0.5f},{0.0f,0.0f},{0.0f,0.0f,0.0f}},
-    {{+0.5f,+0.0f,-0.5f},{0.0f,0.5f},{0.0f,0.0f,0.0f}},
-    {{+0.5f,+0.0f,+0.5f},{0.5f,0.5f},{0.0f,0.0f,0.0f}},
-    {{-0.5f,+0.0f,+0.5f},{0.0f,0.5f},{0.0f,0.0f,0.0f}},
+    {{-0.707f,+0.0f,-0.707f},{0.0f,0.0f},{0.0f,0.0f,0.0f}},
+    {{+0.707f,+0.0f,-0.707f},{0.0f,0.707f},{0.0f,0.0f,0.0f}},
+    {{+0.707f,+0.0f,+0.707f},{0.707f,0.707f},{0.0f,0.0f,0.0f}},
+    {{-0.707f,+0.0f,+0.707f},{0.0f,0.707f},{0.0f,0.0f,0.0f}},
     {{+0.0f,+1.0f,+0.0f},{1.0f,0.0f},{0.0f,0.0f,0.0f}},
     {{+0.0f,-1.0f,+0.0f},{1.0f,1.0f},{0.0f,0.0f,0.0f}}
 };
@@ -110,11 +110,23 @@ static void subdivide_sphere(Sphere* s)
         u32 b3_index = add_vertex(s,&b3);
 
         // assumes indices was preallocated with enough space
-        s->indices[s->num_indices+0] = b1_index;
-        s->indices[s->num_indices+1] = b2_index;
+        s->indices[i]   = b1_index;
+        s->indices[i+1] = b2_index;
+        s->indices[i+2] = b3_index;
+
+        s->indices[s->num_indices+0] = i1;
+        s->indices[s->num_indices+1] = b1_index;
         s->indices[s->num_indices+2] = b3_index;
 
-        s->num_indices += 3;
+        s->indices[s->num_indices+3] = b1_index;
+        s->indices[s->num_indices+4] = i2;
+        s->indices[s->num_indices+5] = b2_index;
+
+        s->indices[s->num_indices+6] = b3_index;
+        s->indices[s->num_indices+7] = b2_index;
+        s->indices[s->num_indices+8] = i3;
+
+        s->num_indices += 9;
     }
 }
 
@@ -136,7 +148,7 @@ bool sphere_create(u32 num_subdivisions,float radius, Sphere* s)
     glBindVertexArray(s->vao);
 
     s->num_vertices = sizeof(base_vertices)/sizeof(Vertex); // initial value.
-    s->vertices = calloc(s->num_vertices+100,sizeof(Vertex)); // 8 base tris * 4 per subdivision * 3 per tri 
+    s->vertices = calloc(s->num_vertices+300,sizeof(Vertex)); // 8 base tris * 4 per subdivision * 3 per tri 
     memcpy(s->vertices,base_vertices,sizeof(base_vertices));
 
     s->num_indices = sizeof(base_indices)/sizeof(u32); // initial value.
@@ -146,7 +158,17 @@ bool sphere_create(u32 num_subdivisions,float radius, Sphere* s)
     for(int i = 0; i < num_subdivisions; ++i)
         subdivide_sphere(s);
 
+    for(int i = 0; i < s->num_vertices; ++i)
+    {
+        normalize_v3f(&s->vertices[i].position);
+        s->vertices[i].position.x *= radius;
+        s->vertices[i].position.y *= radius;
+        s->vertices[i].position.z *= radius;
+    }
+
     calc_vertex_normals(s->indices, s->num_indices, s->vertices, s->num_vertices);
+
+    printf("#verts: %u, #indices: %u\n",s->num_vertices, s->num_indices);
 
  	glGenBuffers(1, &s->vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, s->vbo);
@@ -159,7 +181,7 @@ bool sphere_create(u32 num_subdivisions,float radius, Sphere* s)
     return true;
 }
 
-void sphere_render(Sphere* s)
+void sphere_render(Sphere* s, Vector3f color)
 {
     glUseProgram(program);
 
@@ -172,6 +194,8 @@ void sphere_render(Sphere* s)
     Matrix4f* world = get_world_transform();
     Matrix4f* wvp = get_wvp_transform();
 
+    shader_set_vec3(program, "base_color", color.x, color.y, color.z);
+
     glUniformMatrix4fv(world_location,1,GL_TRUE,(const GLfloat*)world);
     glUniformMatrix4fv(wvp_location,1,GL_TRUE,(const GLfloat*)wvp);
 
@@ -182,26 +206,25 @@ void sphere_render(Sphere* s)
     glUniform3f(dir_light_location.direction, sunlight.direction.x, sunlight.direction.y, sunlight.direction.z);
     glUniform1f(dir_light_location.diffuse_intensity, sunlight.base.diffuse_intensity);
 
+    glBindBuffer(GL_ARRAY_BUFFER, s->vbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,s->ibo);
+
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glEnableVertexAttribArray(2);
 
-    glBindBuffer(GL_ARRAY_BUFFER, s->vbo);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)0);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)12);
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)20);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,s->ibo);
-
     if(show_wireframe)
-        glDrawElements(GL_LINES, s->num_indices, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_LINES, s->num_indices, GL_UNSIGNED_INT, NULL);
     else
-        glDrawElements(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT, NULL);
 
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(2);
 
     glUseProgram(0);
-
 }
