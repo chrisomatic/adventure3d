@@ -256,9 +256,9 @@ void init()
     sky_init();
     text_init();
 
-    sphere_create(2,1.0f,&my_sphere);
-
     menu_init(6,&title_screen);
+    update_title_screen();
+
 }
 
 void deinit()
@@ -456,40 +456,11 @@ void render()
             mesh_render(&obj, pos, rotation, scale);
         }
 
-        // sphere
-
         float angle = DEG(sinf(0.1f*world.time));
-
-#if 0
-        my_sphere.pos.x = 0.0f+5.0f;my_sphere.pos.y = -15.0f;my_sphere.pos.z = 0.0f+5.0f;
-        my_sphere.rotation.x = 0.0f; my_sphere.rotation.y = 0.0f;my_sphere.rotation.z = 0.0f;
-        my_sphere.scale.x = 1.0f;my_sphere.scale.y = 1.0f;my_sphere.scale.z = 1.0f;
-
-        sphere_render(&my_sphere);
-#else
-        my_sphere.rotation.x = 0.0f; my_sphere.rotation.y = 0.0f;my_sphere.rotation.z = 0.0f;
-        my_sphere.scale.x = 1.0f;my_sphere.scale.y = 1.0f;my_sphere.scale.z = 1.0f;
-
-        
-        for(int i = 0; i < 10; ++i)
-        {
-            for(int j = 0; j < 10; ++j)
-            {
-                for(int k = 0; k < 10; ++k)
-                {
-                    my_sphere.pos.x = 0.0f+5.0f*i;my_sphere.pos.y = -10.0f-5*k;my_sphere.pos.z = 0.0f+5.0f*j;
-
-                    Vector3f c = {1.0f-(i/10.0f),1.0f-(j/10.0f),1.0f-(k/10.0f)};
-                
-                    sphere_render(&my_sphere,c);
-                }
-            }
-
-        }
-#endif
 
         sky_render();
 
+        // hud
         Vector3f color = {1.0f,1.0f,1.0f};
 
         if(is_client)

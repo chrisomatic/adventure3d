@@ -19,6 +19,7 @@
 #include "light.h"
 
 #define TERRAIN_SCALE_FACTOR 2.0f
+#define TERRAIN_DETAIL_LEVEL 1.0f
 
 Mesh terrain = {0};
 
@@ -180,8 +181,8 @@ void terrain_build(const char* heightmap)
     
     printf("Loaded file %s. w: %d h: %d channels: %d\n",heightmap,x,y,n);
 
-    terrain_heights_width = x-1;
-    int terrain_heights_width_p1 = x;
+    terrain_heights_width = (x-1)*TERRAIN_DETAIL_LEVEL;
+    int terrain_heights_width_p1 = (x)*TERRAIN_DETAIL_LEVEL;
 
     terrain_scale = TERRAIN_SCALE_FACTOR*terrain_heights_width;
     terrain_pos = terrain_scale / 2.0f;
@@ -204,13 +205,33 @@ void terrain_build(const char* heightmap)
 
     //printf("===== TERRAIN =====\n");
     
-    for(int i = 0; i < x; ++i)
+    for(int i = 0; i < terrain_heights_width_p1; ++i)
     {
-        for(int j = 0; j < y; ++j)
+        for(int j = 0; j < terrain_heights_width_p1; ++j)
         {
-            int index = i*(x)+j;
+            float xlookup = (i*terrain_heights_width_p1) / TERRAIN_DETAIL_LEVEL;
+            float ylookup = j / TERRAIN_DETAIL_LEVEL;
 
-            float norm_height = (heightdata[index]/8.0f);
+            int xindex = (int)xlookup;
+            int yindex = (int)ylookup;
+
+            float mod_x = (xlookup - xindex);
+            float mod_y = (ylookup - yindex);
+
+            int index = xindex + yindex;
+            int width = terrain_heights_width_p1 / TERRAIN_DETAIL_LEVEL;
+
+            float h00 = heightdata[index];
+            float h01 = heightdata[index+width];
+            float h10 = heightdata[index+1];
+            float h11 = heightdata[index+width+1];
+
+            float height_x = (1.0f-mod_x)*h00 + (mod_x)*h01;
+            float height_y = (1.0f-mod_y)*h10 + (mod_y)*h11;
+
+            float norm_height = (height_x + height_y) / 2.0f;
+            norm_height /= 8.0f;
+
             terrain_heights[index] = norm_height;
 
             terrain_vertices[index].position.x = i*interval;

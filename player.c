@@ -26,9 +26,9 @@ void player_init()
     memset(player.name,0,16);
     strncpy(player.name,"Player",16);
 
-    player.color.x = 0;
-    player.color.y = 0;
-    player.color.z = 0;
+    player.color.x = 103;
+    player.color.y = 90;
+    player.color.z = 45;
 
     load_player_props();
 }
