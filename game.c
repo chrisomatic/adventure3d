@@ -63,6 +63,10 @@ typedef struct
 PlayerInfo player_info[MAX_CLIENTS] = {0};
 int num_other_players = 0;
 
+Mesh rat = {0};
+Mesh cheese = {0};
+Mesh sword = {0};
+
 MenuItemList title_screen = {0};
 
 // =========================
@@ -246,7 +250,10 @@ void init()
     shader_load_all();
 
     printf("Creating meshes.\n");
-    mesh_init_all();
+
+    mesh_build(&rat,"models/rat.stl");
+    mesh_build(&cheese, "models/cheese.stl");
+    mesh_build(&sword, "models/broadsword.stl");
 
     printf("Building terrain.\n");
     terrain_build("textures/heightmap5.png");
@@ -424,7 +431,7 @@ void render()
             Vector3f rotation = {-player.angle_v+90.0f, -player.angle_h+90.0f, 0.0f};
             Vector3f scale    = {1.0f, 1.0f, 1.0f};
 
-            mesh_render(&obj, pos, rotation, scale);
+            mesh_render(&sword, pos, rotation, scale);
         }
 
         // objects
@@ -454,7 +461,7 @@ void render()
 
             Vector3f scale    = {1.0f, 1.0f, 1.0f};
 
-            mesh_render(&obj, pos, rotation, scale);
+            mesh_render(&rat, pos, rotation, scale);
         }
 
         float angle = DEG(sinf(0.1f*world.time));

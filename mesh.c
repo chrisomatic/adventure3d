@@ -14,8 +14,6 @@
 
 #include "mesh.h"
 
-Mesh obj = {0};
-
 bool show_wireframe = false;
 
 typedef struct
@@ -279,26 +277,21 @@ void mesh_render(Mesh* mesh, Vector3f pos, Vector3f rotation, Vector3f scale)
     texture_unbind();
 }
 
-static void build_object()
+void mesh_build(Mesh* obj, const char* model_location)
 {
-    glGenVertexArrays(1, &obj.vao);
-    glBindVertexArray(obj.vao);
+    glGenVertexArrays(1, &obj->vao);
+    glBindVertexArray(obj->vao);
 
-    mesh_load_model(MODEL_FORMAT_STL,"models/rat.stl",&obj);
-    calc_vertex_normals(obj.indices, obj.num_indices, obj.vertices, obj.num_vertices);
+    mesh_load_model(MODEL_FORMAT_STL,model_location,obj);
+    calc_vertex_normals(obj->indices, obj->num_indices, obj->vertices, obj->num_vertices);
 
- 	glGenBuffers(1, &obj.vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, obj.vbo);
-	glBufferData(GL_ARRAY_BUFFER, obj.num_vertices*sizeof(Vertex), obj.vertices, GL_STATIC_DRAW);
+ 	glGenBuffers(1, &obj->vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, obj->vbo);
+	glBufferData(GL_ARRAY_BUFFER, obj->num_vertices*sizeof(Vertex), obj->vertices, GL_STATIC_DRAW);
 
-    glGenBuffers(1,&obj.ibo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, obj.ibo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, obj.num_indices*sizeof(u32), obj.indices, GL_STATIC_DRAW);
+    glGenBuffers(1,&obj->ibo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, obj->ibo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, obj->num_indices*sizeof(u32), obj->indices, GL_STATIC_DRAW);
 
-    memcpy(&obj.mat.texture,&texture2,sizeof(GLuint));
-}
-
-void mesh_init_all()
-{
-    build_object();
+    memcpy(&obj->mat.texture,&texture2,sizeof(GLuint));
 }

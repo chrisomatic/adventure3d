@@ -35,8 +35,11 @@ typedef enum
 
 extern bool show_wireframe;
 
-extern Mesh obj;
+extern Mesh rat;
+extern Mesh cheese;
+extern Mesh sword;
 
 void mesh_init_all();
 void mesh_load_model(ModelFormat format, const char* file_path, Mesh* mesh);
 void mesh_render(Mesh* mesh, Vector3f pos, Vector3f rotation, Vector3f scale);
+void mesh_build(Mesh* obj, const char* model_location);
