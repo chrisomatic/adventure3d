@@ -18,6 +18,7 @@ int view_width = STARTING_VIEW_WIDTH;
 int view_height = STARTING_VIEW_HEIGHT;
 
 static void window_size_callback(GLFWwindow* window, int window_width, int window_height);
+static void window_maximize_callback(GLFWwindow* window, int maximized);
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 static void key_callback(GLFWwindow* window, int key, int scan_code, int action, int mods);
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
@@ -49,12 +50,12 @@ bool window_init()
 
     glfwSetWindowAspectRatio(window,ASPECT_NUM,ASPECT_DEM);
     glfwSetWindowSizeCallback(window,window_size_callback);
+    glfwSetWindowMaximizeCallback(window, window_maximize_callback);
     glfwSetKeyCallback(window, key_callback);
     glfwSetCursorPosCallback(window, cursor_position_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
 
     glfwMakeContextCurrent(window);
-
     printf("Initializing GLEW.\n");
 
     // GLEW
@@ -78,7 +79,7 @@ static void window_size_callback(GLFWwindow* window, int window_width, int windo
     printf("Window: W %d, H %d\n",window_width,window_height);
 
     view_height = window_height;
-    view_width  = ASPECT_RATIO * window_height;
+    view_width  = window_width; //ASPECT_RATIO * window_height;
 
     int start_x = (window_width + view_width) / 2.0f - view_width;
     int start_y = (window_height + view_height) / 2.0f - view_height;
@@ -88,6 +89,20 @@ static void window_size_callback(GLFWwindow* window, int window_width, int windo
     if(is_title_screen)
     {
         update_title_screen();
+    }
+}
+
+static void window_maximize_callback(GLFWwindow* window, int maximized)
+{
+    if (maximized)
+    {
+        // The window was maximized
+        printf("Maximized.\n");
+    }
+    else
+    {
+        // The window was restored
+        printf("Restored.\n");
     }
 }
 
@@ -103,10 +118,6 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
         if(mode == GLFW_CURSOR_DISABLED)
             camera_update_angle(xpos, ypos);
 
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-        // put pointer in center of window
-        glfwSetCursorPos(window, camera.cursor.x, camera.cursor.y);
     }
 }
 

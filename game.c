@@ -150,6 +150,7 @@ static void start_local_game()
 {
     is_title_screen = false;
     is_client = false;
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
 static void join_public_server()
@@ -165,9 +166,10 @@ static void exit_game()
 
 void update_title_screen()
 {
+    printf("Updating title screen...\n");
     menu_clear_all(&title_screen);
 
-    float start_x = view_width/2.0f;
+    float start_x = view_width /2.0f;
     float start_y = view_height / 2.0f - 100.0f;
 
     menu_add_item2(&title_screen,start_x-80.0f,start_y-100.0f,160.0f,25.0f,"ADVENTURE",0,NULL);
@@ -258,7 +260,6 @@ void init()
 
     menu_init(6,&title_screen);
     update_title_screen();
-
 }
 
 void deinit()
