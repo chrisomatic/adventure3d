@@ -10,7 +10,7 @@ void light_init()
     sunlight.base.color.z = 1.0f;
 
     sunlight.base.ambient_intensity = 0.40;
-    sunlight.base.diffuse_intensity = 0.70;
+    sunlight.base.diffuse_intensity = 0.50;
 
     sunlight.direction.x = 1.00f;
     sunlight.direction.y = 1.00f;

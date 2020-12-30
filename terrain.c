@@ -171,7 +171,7 @@ void terrain_build(const char* heightmap)
     glBindVertexArray(terrain.vao);
 
     int x,y,n;
-    unsigned char* heightdata = stbi_load(heightmap, &x, &y, &n, 0);
+    unsigned char* heightdata = stbi_load(heightmap, &x, &y, &n, 1);
 
     if(!heightdata)
     {

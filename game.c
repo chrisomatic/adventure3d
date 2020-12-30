@@ -249,7 +249,7 @@ void init()
     mesh_init_all();
 
     printf("Building terrain.\n");
-    terrain_build("textures/heightmap.png");
+    terrain_build("textures/heightmap5.png");
 
     player_init();
     camera_init();
